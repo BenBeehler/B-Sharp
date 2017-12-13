@@ -1,0 +1,37 @@
+Main Memory Tansfer Symbol:
+				=> (point data), <= (return parameters)
+				
+				^ Language Symbols
+				
+On Execute:
+	Runtime => 
+		Parse -> Static Typing (Variable/Block Analysis) -> 
+		Function Search =>
+		
+		Execute Code =>
+		
+		Compile -> 
+			Pull Libraries ->
+				Dump Libraries -> 
+					Restructure Code concerning libraries ->
+			
+			Write Configuration ->
+				
+			
+			Pull Executable ->
+				Reinterpret Code ->
+					
+			Check Configuration ->
+				Write Configuration ->
+					@Runtime, $Stop Compile =>
+					
+				
+			Results ->
+				Complete, Errors thrown if necessary,
+				 code executes,
+				  everyone is happy :P
+		
+
+
+
+Started @ March 18, 2017 by Ben Beehler	
