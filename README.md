@@ -3,7 +3,7 @@ An open source, statically typed programming language.<br>
 
 # Distribution
 You can build this program from source or download a pre-compiled SDK.<br>
-SDK: https://www.dropbox.com/s/88mviu1g7o780xn/B%23.zip?dl=0
+SDK: https://www.dropbox.com/s/s527yllr3mf22nr/B%23%20Compiled%20SDK.zip?dl=0
 
 # Introduction
 This language has 2 primary command usages:<br>
