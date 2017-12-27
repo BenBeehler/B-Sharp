@@ -14,16 +14,14 @@ This language has 2 primary command usages:<br>
 
 # Example
 <h3>Basic Hello World</h3>
-```ruby
-native::println("Hello World")
-```
+native::println("Hello World")<br>
+<br>
 <h3>This program receives input from the standard input stream and prints it in a loop, until it is interrupted</h3>
-```ruby
-func iterate() {
-	var data string = native::stdin()
-	native::println(data)
-}
+func iterate() {<br>
+	var data string = native::stdin()<br>
+	native::println(data)<br>
+}<br>
+<br>
+loop(true) iterate()<br>
 
-loop(true) iterate()
-```
 
