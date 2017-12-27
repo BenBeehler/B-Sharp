@@ -14,11 +14,11 @@ This language has 2 primary command usages:<br>
 
 # Example
 <h3>Basic Hello World<h3>
-```go
+```ruby
 native::println("Hello World")
 ```
 <h3>This program receives input from the standard input stream and prints it in a loop, until it is interrupted<h3>
-```go
+```ruby
 func iterate() {
 	var data string = native::stdin()
 	native::println(data)
