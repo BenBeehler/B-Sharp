@@ -14,14 +14,16 @@ This language has 2 primary command usages:<br>
 
 # Example
 <h3>Basic Hello World<h3>
-```
+```go
 native::println("Hello World")
 ```
 <h3>This program receives input from the standard input stream and prints it in a loop, until it is interrupted<h3>
-```func iterate() {
+```go
+func iterate() {
 	var data string = native::stdin()
 	native::println(data)
 }
 
-loop(true) iterate()```
+loop(true) iterate()
+```
 
