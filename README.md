@@ -11,3 +11,17 @@ This language has 2 primary command usages:<br>
 - b# -d "filePath"<br><br>
 -i is the interpreter command, this is the standard command for execution<br>
 -d is the debugger command, this prints out all objects and their respective values<br><br>
+
+# Example
+<h3>Basic Hello World<h3>
+```
+native::println("Hello World")
+```
+<h3>This program receives input from the standard input stream and prints it in a loop, until it is interrupted<h3>
+```func iterate() {
+	var data string = native::stdin()
+	native::println(data)
+}
+
+loop(true) iterate()```
+
