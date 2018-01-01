@@ -95,4 +95,9 @@ public class BType implements BObject {
 		this.access = access;
 	}
 
+	public void addVariable(BVariable var) {
+		ArrayList<BVariable> list = getVariables();
+		list.add(var);
+		setVariables(list);
+	}
 }

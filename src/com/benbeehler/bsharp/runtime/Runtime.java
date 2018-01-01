@@ -1,6 +1,14 @@
 package com.benbeehler.bsharp.runtime;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -40,6 +48,9 @@ public class Runtime {
 	public static ArrayList<String> comments =
 			new ArrayList<>();
 	
+	public static ArrayList<String> categories = 
+			new ArrayList<>();
+	
 	public static BFunction main;
 	
 	public static void init(File file) {
@@ -50,194 +61,400 @@ public class Runtime {
 		main = new BFunction("main", null, null, AccessModifier.UNIVERSAL);
 		Runtime.addFunction(main);
 		
+		initCategories();
 		initPrimitiveVariables();
 		Runtime.typeInit();
-		primitiveInit();
+		//primitiveInit();
 		
 		interpret();
+	}
+	
+	public static void initCategories() {
+		Runtime.categories.add("native");
 	}
 	
 	public static void initPrimitiveVariables() {
 		BVariable nil = new BVariable("nil", "nil", file, AccessModifier.UNIVERSAL);
 		nil.setFunction(main);
 		addVariable(nil);
+		
+		BVariable stdin = new BVariable("stdin", System.in, file, AccessModifier.UNIVERSAL);
+		stdin.setFunction(Runtime.getFunctionFromName("main"));
+		addVariable(stdin);
+		
+		BVariable stdout = new BVariable("stdout", System.out, file, AccessModifier.UNIVERSAL);
+		stdout.setFunction(Runtime.getFunctionFromName("main"));
+		addVariable(stdout);
 	}
 	
-	public static void primitiveInit() {
-		
+	public static void importNative(String function) {
 		//Multithreading
-		BFunction sleep = new BFunction("thread::sleep", null, file,
-				AccessModifier.UNIVERSAL);
-		
-		sleep.setNative(true);
-		BVariable s_1 = new BVariable("thrsleep_1", null, null, AccessModifier.RESTRICTED);
-		sleep.addParameter(s_1);
-		sleep.setNativeRunnable(() -> {
-			if(sleep.getParameters().size() == 1) {
-				String timeString = sleep.getParameters().get(0).getValue().toString();
-				
-				if(isInteger(timeString)) {
-					int value = Integer.parseInt(timeString);
-					try {
-						Thread.sleep(value);
-					} catch(InterruptedException e) {
-						Console.E("failed to sleep thread... interrupted..");
+		if(function.equals("thread")) {
+			BFunction sleep = new BFunction("sleep", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			sleep.setNative(true);
+			BVariable s_1 = new BVariable("thrsleep_1", null, null, AccessModifier.RESTRICTED);
+			sleep.addParameter(s_1);
+			sleep.setNativeRunnable(() -> {
+				if(sleep.getParameters().size() == 1) {
+					String timeString = sleep.getParameters().get(0).getValue().toString();
+					
+					if(isInteger(timeString)) {
+						int value = Integer.parseInt(timeString);
+						try {
+							Thread.sleep(value);
+						} catch(InterruptedException e) {
+							Console.E("failed to sleep thread... interrupted..");
+						}
+					} else {
+						Console.E("specify the milliseconds to which the thread will sleep");
 					}
 				} else {
-					Console.E("specify the milliseconds to which the thread will sleep");
+					Console.E("invalid parameter count");
 				}
-			} else {
-				Console.E("invalid parameter count");
-			}
-		});
-		
-		addFunction(sleep);
-		
-		BFunction thread = new BFunction("native::thread", null, file,
-				AccessModifier.UNIVERSAL);
-		
-		thread.setNative(true);
-		BVariable thr_1 = new BVariable("thr_1", null, null, AccessModifier.RESTRICTED);
-		thread.addParameter(thr_1);
-		thread.setNativeRunnable(() -> {
-			if(thread.getParameters().size() == 1) {
-				String threadName = thread.getParameters().get(0).getValue().toString();
-				new Thread(() -> {
+			});
+			
+			addFunction(sleep);
+			
+			BFunction thread = new BFunction("thread", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			thread.setNative(true);
+			BVariable thr_1 = new BVariable("thr_1", null, null, AccessModifier.RESTRICTED);
+			thread.addParameter(thr_1);
+			thread.setNativeRunnable(() -> {
+				if(thread.getParameters().size() == 1) {
+					String threadName = thread.getParameters().get(0).getValue().toString();
+					new Thread(() -> {
+						SyntaxManager.callFunction(threadName, new Parser(file));
+					}).start();
+				} else {
+					Console.E("invalid parameter count");
+				}
+			});
+			
+			addFunction(thread);
+		} else if(function.equals("type")) {
+			BFunction tostring = new BFunction("toString", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			tostring.setNative(true);
+			BVariable tostring_1 = new BVariable("tostring_1", null, null, AccessModifier.RESTRICTED);
+			tostring.addParameter(tostring_1);
+			tostring.setNativeRunnable(() -> {
+				if(tostring.getParameters().size() == 1) {
+					String str_val = tostring.getParameters().get(0).getValue().toString();
+					tostring.setReturnValue(str_val);
+				} else {
+					Console.E("invalid parameter count");
+				}
+			});
+			
+			addFunction(tostring);
+			
+			BFunction todouble = new BFunction("toDouble", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			todouble.setNative(true);
+			BVariable todouble_1 = new BVariable("todouble_1", null, null, AccessModifier.RESTRICTED);
+			todouble.addParameter(todouble_1);
+			todouble.setNativeRunnable(() -> {
+				if(todouble.getParameters().size() == 1) {
+					String str_val = todouble.getParameters().get(0).getValue().toString();
+					todouble.setReturnValue(Double.parseDouble(str_val));
+				} else {
+					Console.E("invalid parameter count");
+				}
+			});
+			
+			addFunction(todouble);
+			
+			BFunction toint = new BFunction("toInteger", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			toint.setNative(true);
+			BVariable toint_1 = new BVariable("toint_1", null, null, AccessModifier.RESTRICTED);
+			toint.addParameter(toint_1);
+			toint.setNativeRunnable(() -> {
+				if(toint.getParameters().size() == 1) {
+					String str_val = toint.getParameters().get(0).getValue().toString();
+					toint.setReturnValue(Integer.parseInt(str_val));
+				} else {
+					Console.E("invalid parameter count");
+				}
+			});
+			
+			addFunction(toint);
+		} else if(function.equals("runtime")) {
+			BFunction rand = new BFunction("rand", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			rand.setNative(true);
+			rand.setNativeRunnable(() -> {
+				rand.setReturnValue(new Random().nextInt(Integer.MAX_VALUE));
+			});
+			
+			addFunction(rand);
+			
+			BFunction gc = new BFunction("gc", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			gc.setNative(true);
+			gc.setNativeRunnable(() -> {
+				java.lang.Runtime.getRuntime().gc();
+			});
+			
+			addFunction(gc);
+			
+			BFunction pdb = new BFunction("print_debug", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			pdb.setNative(true);
+			pdb.setNativeRunnable(() -> {
+				Runtime.print_debug();
+			});
+			
+			addFunction(pdb);
+		} else if(function.equals("io")) {
+			BFunction puts = new BFunction("puts", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			puts.setNative(true);
+			BVariable puts_1 = new BVariable("puts_1", null, null, AccessModifier.RESTRICTED);
+			BVariable puts_2 = new BVariable("puts_2", null, null, AccessModifier.RESTRICTED);
+			puts.addParameter(puts_1);
+			puts.addParameter(puts_2);
+			puts.setNativeRunnable(() -> {
+				if(puts.getParameters().size() == 2) {
+					Object value = puts.getParameters().get(0).getValue();
+					String data = puts.getParameters().get(1).getValue().toString();
 					
-					SyntaxManager.callFunction(threadName, new Parser(file));
-				}).start();
-			} else {
-				Console.E("invalid parameter count");
-			}
-		});
-		
-		addFunction(thread);
-		
-		//standard primitive type functions
-		BFunction tostring = new BFunction("native::toString", null, file,
-				AccessModifier.UNIVERSAL);
-		
-		tostring.setNative(true);
-		BVariable tostring_1 = new BVariable("tostring_1", null, null, AccessModifier.RESTRICTED);
-		tostring.addParameter(tostring_1);
-		tostring.setNativeRunnable(() -> {
-			if(tostring.getParameters().size() == 1) {
-				String str_val = tostring.getParameters().get(0).getValue().toString();
-				tostring.setReturnValue(str_val);
-			} else {
-				Console.E("invalid parameter count");
-			}
-		});
-		
-		addFunction(tostring);
-		
-		BFunction todouble = new BFunction("native::toDouble", null, file,
-				AccessModifier.UNIVERSAL);
-		
-		todouble.setNative(true);
-		BVariable todouble_1 = new BVariable("todouble_1", null, null, AccessModifier.RESTRICTED);
-		todouble.addParameter(todouble_1);
-		todouble.setNativeRunnable(() -> {
-			if(todouble.getParameters().size() == 1) {
-				String str_val = todouble.getParameters().get(0).getValue().toString();
-				todouble.setReturnValue(Double.parseDouble(str_val));
-			} else {
-				Console.E("invalid parameter count");
-			}
-		});
-		
-		addFunction(todouble);
-		
-		BFunction toint = new BFunction("native::toInteger", null, file,
-				AccessModifier.UNIVERSAL);
-		
-		toint.setNative(true);
-		BVariable toint_1 = new BVariable("toint_1", null, null, AccessModifier.RESTRICTED);
-		toint.addParameter(toint_1);
-		toint.setNativeRunnable(() -> {
-			if(toint.getParameters().size() == 1) {
-				String str_val = toint.getParameters().get(0).getValue().toString();
-				toint.setReturnValue(Integer.parseInt(str_val));
-			} else {
-				Console.E("invalid parameter count");
-			}
-		});
-		
-		addFunction(toint);
-		
-		BFunction rand = new BFunction("native::rand", null, file,
-				AccessModifier.UNIVERSAL);
-		
-		rand.setNative(true);
-		rand.setNativeRunnable(() -> {
-			rand.setReturnValue(new Random().nextInt(Integer.MAX_VALUE));
-		});
-		
-		addFunction(rand);
-		
-		BFunction gc = new BFunction("native::gc", null, file,
-				AccessModifier.UNIVERSAL);
-		
-		gc.setNative(true);
-		gc.setNativeRunnable(() -> {
-			java.lang.Runtime.getRuntime().gc();
-		});
-		
-		addFunction(gc);
-		
-		BFunction pdb = new BFunction("native::print_debug", null, file,
-				AccessModifier.UNIVERSAL);
-		
-		pdb.setNative(true);
-		pdb.setNativeRunnable(() -> {
-			Runtime.print_debug();
-		});
-		
-		addFunction(pdb);
-		
-		BFunction print = new BFunction("native::print", null, file,
-				AccessModifier.UNIVERSAL);
-		
-		print.setNative(true);
-		BVariable p_1 = new BVariable("print_p1", null, null, AccessModifier.RESTRICTED);
-		print.addParameter(p_1);
-		print.setNativeRunnable(() -> {
-			if(print.getParameters().size() == 1) {
-				System.out.print(print.getParameters().get(0).getValue());
-			} else {
-				Console.E("invalid parameter count");
-			}
-		});
-		
-		addFunction(print);
-		
-		BFunction println = new BFunction("native::println", null, file,
-				AccessModifier.UNIVERSAL);
-		
-		println.setNative(true);
-		BVariable pln_1 = new BVariable("println_p1", null, null, AccessModifier.RESTRICTED);
-		println.addParameter(pln_1);
-		println.setNativeRunnable(() -> {
-			if(println.getParameters().size() == 1) {
-				System.out.println(println.getParameters().get(0).getValue());
-			} else {
-				Console.E("invalid parameter count");
-			}
-		});
-		
-		addFunction(println);
-		
-		BFunction stdin = new BFunction("native::stdin", null, file,
-				AccessModifier.UNIVERSAL);
-		
-		stdin.setNative(true);
-		stdin.setNativeRunnable(() -> {
-			stdin.setReturnValue(Utils.getSpecializedInput());
-		});
-		
-		addFunction(stdin);
+					if(value instanceof PrintStream) {
+						@SuppressWarnings("resource")
+						PrintStream stream = (PrintStream) value;
+						stream.printf(data);
+						stream.flush();
+					} else {
+						Console.E("given value is not recognized as an output stream");
+					}
+				} else {
+					Console.E("invalid parameter count");
+				}
+			});
+			
+			Runtime.functions.add(puts);
+			
+			BFunction outputFile = new BFunction("ostream", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			outputFile.setNative(true);
+			BVariable outputf_1 = new BVariable("outputf_1", null, null, AccessModifier.RESTRICTED);
+			outputFile.addParameter(outputf_1);
+			outputFile.setNativeRunnable(() -> {
+				if(outputFile.getParameters().size() == 1) {
+					Object parameter = outputFile.getParameters().get(0).getValue();
+					String fPath = parameter.toString();
+					File file = new File(fPath);
+					if(file.exists()) {
+						try {
+							PrintStream stream = new PrintStream(file);
+							outputFile.setReturnValue(stream);
+						} catch (FileNotFoundException e) {
+							Console.E("failed to create output to file: specified does not exist " + file.getPath());
+						}
+					} else if(parameter instanceof Socket) {
+						@SuppressWarnings("resource")
+						Socket socket = (Socket) parameter;
+						
+						try {
+							PrintStream stream = new PrintStream(socket.getOutputStream());
+							outputFile.setReturnValue(stream);
+						} catch (FileNotFoundException e) {
+							Console.E("failed to create output to file: specified does not exist " + file.getPath());
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					} else {
+						Console.E("failed to create output to file: specified does not exist " + file.getPath());
+					}
+				} else {
+					Console.E("invalid parameter count");
+				}
+			});
+			
+			addFunction(outputFile);
+			
+			BFunction accept_socket = new BFunction("saccept", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			accept_socket.setNative(true);
+			BVariable as_1 = new BVariable("accept_sock_1", null, null, AccessModifier.RESTRICTED);
+			accept_socket.addParameter(as_1);
+			accept_socket.setNativeRunnable(() -> {
+				Object parameter = accept_socket.getParameters().get(0).getValue();
+				
+				if(parameter instanceof ServerSocket) {
+					@SuppressWarnings("resource")
+					ServerSocket server = (ServerSocket) parameter;
+					try {
+						accept_socket.setReturnValue(server.accept());
+					} catch (IOException e) {
+						Console.E("failed to accept socket");
+					}
+				} else {
+					Console.E("parameter must be serversocket");
+				}
+			});
+			
+			Runtime.addFunction(accept_socket);
+			
+			BFunction readFile = new BFunction("istream", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			readFile.setNative(true);
+			BVariable readfile_1 = new BVariable("readf_1", null, null, AccessModifier.RESTRICTED);
+			readFile.addParameter(readfile_1);
+			readFile.setNativeRunnable(() -> {
+				if(readFile.getParameters().size() == 1) {
+					Object parameter = readFile.getParameters().get(0).getValue();
+					String fPath = parameter.toString();
+					File file = new File(fPath);
+					if(file.exists()) {
+						try {
+							FileInputStream fstream = new FileInputStream(file);
+							BufferedInputStream stream = new BufferedInputStream(fstream);
+							readFile.setReturnValue(stream);
+						} catch (FileNotFoundException e) {
+							Console.E("failed to read file: specified does not exist");
+						}
+					} else if(parameter instanceof Socket) {
+						@SuppressWarnings("resource")
+						Socket socket = (Socket) parameter;
+						try {
+							InputStream stream = socket.getInputStream();
+							readFile.setReturnValue(stream);
+						} catch (IOException e) {
+							Console.E("failed to retrieve input stream for socket");
+						}
+					} else {
+						Console.E("failed to read file: specified does not exist");
+					}
+				} else {
+					Console.E("invalid parameter count");
+				}
+			});
+			
+			addFunction(readFile);
+			
+			BFunction read = new BFunction("gets", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			read.setNative(true);
+			BVariable read_p1 = new BVariable("read_p1", System.in, null, AccessModifier.RESTRICTED);
+			read.addParameter(read_p1);
+			read.setNativeRunnable(() -> {
+				if(read.getParameters().size() == 1) {
+					Object parameter = read.getParameters().get(0).getValue();
+					
+					if(parameter instanceof InputStream) {
+						InputStream stream = (InputStream) parameter;
+						try {
+							String result = Utils.getInput(stream);
+							read.setReturnValue(result);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					} else {
+						Console.E("given value is not recognized as an input stream");
+					}
+				} else {
+					Console.E("invalid parameter count");
+				}
+			});
+			
+			addFunction(read);
+
+			BFunction socket = new BFunction("socket", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			socket.setNative(true);
+			BVariable socket_1 = new BVariable("socket_1", System.in, null, AccessModifier.RESTRICTED);
+			BVariable socket_2 = new BVariable("socket_2", System.in, null, AccessModifier.RESTRICTED);
+			socket.addParameter(socket_1);
+			socket.addParameter(socket_2);
+			socket.setNativeRunnable(() -> {
+				if(socket.getParameters().size() == 2) {
+					String host = socket.getParameters().get(0).getValue().toString();
+					Object portParameter = socket.getParameters().get(1).getValue().toString();
+					int port = Integer.parseInt(portParameter.toString());
+					try {
+						Socket s = new Socket(host, port);
+						socket.setReturnValue(s);
+					} catch (IOException e) {
+						Console.E("socket IO error: server could not found on specified address and port");
+					}
+				} else {
+					Console.E("invalid parameter count");
+				}
+			});
+			
+			addFunction(socket);
+			
+			BFunction server = new BFunction("socketserver", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			server.setNative(true);
+			BVariable server_1 = new BVariable("server_1", System.in, null, AccessModifier.RESTRICTED);
+			server.addParameter(server_1);
+			server.setNativeRunnable(() -> {
+				if(server.getParameters().size() == 1) {
+					Object portParameter = server.getParameters().get(0).getValue().toString();
+					int port = Integer.parseInt(portParameter.toString());
+					try {
+						ServerSocket result = new ServerSocket(port);
+						server.setReturnValue(result);
+					} catch (IOException e) {
+						Console.E("specified port has already been binded to another program");
+					}
+				} else {
+					Console.E("invalid parameter count");
+				}
+			});
+			
+			addFunction(server);
+			
+			BFunction readLine = new BFunction("getsln", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			readLine.setNative(true);
+			BVariable stdinln_1 = new BVariable("readlinein_p1", System.in, null, AccessModifier.RESTRICTED);
+			readLine.addParameter(stdinln_1);
+			readLine.setNativeRunnable(() -> {
+				if(readLine.getParameters().size() == 1) {
+					Object parameter = readLine.getParameters().get(0).getValue();
+					
+					if(parameter instanceof InputStream) {
+						InputStream stream = (InputStream) parameter;
+						try {
+							String result = Utils.getInputLine(stream);
+							readLine.setReturnValue(result);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					} else {
+						Console.E("given value is not recognized as an input stream");
+					}
+				} else {
+					Console.E("invalid parameter count");
+				}
+			});
+			
+			addFunction(readLine);
+		}
 	}
-	
+		
 	public static void print_debug() {
 		/*
 		 * prints debugger
@@ -256,6 +473,7 @@ public class Runtime {
 		
 		Runtime.types.stream().forEach(file -> {
 			System.out.println("Type : " + file.getName());
+			print_debug_type_variables(file);
 		});
 		System.out.println();
 		
@@ -267,6 +485,22 @@ public class Runtime {
 			}
 		}
 		System.out.println();
+	}
+	
+	public static void print_debug_type_variables(BType type) {
+		for(BVariable variable : type.getVariables()) {
+			printSubVariables(variable);
+			System.out.println(type.getName() + "->" + variable.getName());
+		}
+	}
+	
+	public static void printSubVariables(BVariable variable) {
+		if(variable.getSubVariables().size() != 0) {
+			for(BVariable var : variable.getSubVariables()) {
+				//System.out.println(variable.getName() + "->" + var.getName());
+				printSubVariables(var);
+			}
+		}
 	}
 	
 	public static void interpret() {
@@ -302,13 +536,16 @@ public class Runtime {
 	
 	//load primitive types into memory
 	public static void typeInit() {
-		BType string = new BType ("string", null, AccessModifier.UNIVERSAL);
-		BType integer = new BType ("integer", null, AccessModifier.UNIVERSAL);
-		BType doubl = new BType ("double", null, AccessModifier.UNIVERSAL);
-		BType bool = new BType ("boolean", null, AccessModifier.UNIVERSAL);
+		BType string = new BType ("string", file, AccessModifier.UNIVERSAL);
+		BType integer = new BType ("integer", file, AccessModifier.UNIVERSAL);
+		BType doubl = new BType ("double", file, AccessModifier.UNIVERSAL);
+		BType bool = new BType ("boolean", file, AccessModifier.UNIVERSAL);
+		BType byt = new BType ("byte", file, AccessModifier.UNIVERSAL);
+		BType ch = new BType ("char", file, AccessModifier.UNIVERSAL);
 		
-		BType list = new BType ("list", null, AccessModifier.UNIVERSAL);
-		BType object = new BType ("object", null, AccessModifier.UNIVERSAL);
+		BType list = new BType ("list", file, AccessModifier.UNIVERSAL);
+		BType object = new BType ("object", file, AccessModifier.UNIVERSAL);
+		BType socket = new BType ("socket", file, AccessModifier.UNIVERSAL);
 		
 		Runtime.addType(string);
 		Runtime.addType(integer);
@@ -316,6 +553,9 @@ public class Runtime {
 		Runtime.addType(bool);
 		Runtime.addType(list);
 		Runtime.addType(object);
+		Runtime.addType(byt);
+		Runtime.addType(ch);
+		Runtime.addType(socket);
 	}
 	
 	// this section is designed for strict value parsing and conversion
@@ -335,11 +575,7 @@ public class Runtime {
 	
 	public static boolean isDouble(String string) {
 		try {
-			if(string.contains(".")) {
-				Double.parseDouble(SyntaxManager.solveArithmeticFromString(string).toString());
-			} else {
-				return false;
-			}
+			Double.parseDouble(SyntaxManager.solveArithmeticFromString(string).toString());
 		} catch (Exception e) {
 			return false;
 		}
@@ -349,16 +585,12 @@ public class Runtime {
 	
 	public static boolean isString(String string) {
 		string = string.trim();
-		
-		if(string.startsWith("\"")) {
-			if(string.endsWith("\"")) {
-				return true;
-			} else {
-				return false;
-			}
-		} else {
+		if(string.contains(SyntaxManager._EQUAL)) 
 			return false;
-		}
+		if((string.startsWith("\"") && string.endsWith("\"")) ||
+				string.contains(SyntaxManager._STRSPLIT)) 
+			return true;
+		return false;
 	}
 	
 	public static boolean isArray(String string) {
@@ -460,36 +692,25 @@ public class Runtime {
 	}
 	
 	public static String getStringValue(String string) {
-		String[] split = string.split(" ");
-		
-		//String getString("Burf")
-		
-		StringBuilder builder = new StringBuilder();
-		
-		if(string.startsWith("\"") &&
-				string.endsWith("\"")) {
-		
-			string = string.replace("\"", "");
+		StringBuilder sb = new StringBuilder();
+		if(isString(string)) {
+			String[] split = string.split(SyntaxManager
+					._STRSPLIT);
 			
-			for(String entry : split) {
-				if(Runtime.isInteger(entry.trim())) {
-					try {
-						builder.append(SyntaxManager.solveArithmeticFromString(entry.trim()).toString());
-					} catch (ScriptException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				} else if (Runtime.containsVariableByName(entry)) {
-					builder.append(Runtime.getVariableFromName(entry.trim()).getValue().toString());
-				} else {
-					builder.append(" " + entry);
+			for(String str : split) {
+				//str = str.trim();
+				if(Runtime.isFunction(str.trim())) {
+					sb.append(getValue(str.trim()));
+				} else if(Runtime.containsVariableByName(str.trim())) {
+					sb.append(getValue(str));
+				} else if(str.trim().startsWith("\"")
+						&& str.trim().endsWith("\"")) {
+					sb.append(str.replaceAll("\"", ""));
 				}
 			}
 		}
 		
-		return builder
-				.toString()
-				.replaceAll("\"", "").replaceFirst(" ", "");
+		return sb.toString();
 	}
 	
 	public static int getInteger(String line) {
@@ -518,24 +739,48 @@ public class Runtime {
 	public static boolean isBoolean(String line) {
 		line = line.trim();
 		
-		if(line.equals("true")) {
+		if(line.equals("true") 
+				|| line.equals("false")) 
 			return true;
-		} else if(line.equals("false")) {
-			return true;
-		} else {
-			return false;
-		}
+		else 
+			if(line.contains(SyntaxManager._EQUAL)) 
+				return true;
+			else
+				return getValue(line).equals("true")
+						|| getValue(line).equals("false");
 	}
 	
-	public static boolean getBoolean(String line) {
+	public static boolean getBoolean(Object l) {
+		String line = l.toString();
 		line = line.trim();
 		
-		if(line.equals("true")) {
+		String[] split = line.split(SyntaxManager._EQUAL);
+		
+		if(line.trim().equals("true")) {
 			return true;
 		} else if(line.equals("false")) {
 			return false;
+		} else if(split.length > 2) {
+			String[] spl = SyntaxManager.splitByMiddle(line, SyntaxManager._EQUAL);
+			
+			return (getBoolean(spl[0]) == getBoolean(spl[1]));
 		} else {
-			return false;
+			if(line.startsWith("!")) return !getBoolean(line
+					.replaceFirst("!", ""));
+			if(line.startsWith(SyntaxManager._OPENPB)) {
+				if(line.endsWith(SyntaxManager._CLOSEPB)) {
+					line = line.replaceFirst(SyntaxManager._OPENPB, "");
+					line = SyntaxManager.reverse(line);
+					line = line.replaceFirst(SyntaxManager.reverse(SyntaxManager._CLOSEPB), "");
+					line = SyntaxManager.reverse(line);
+				}
+			}
+			
+			if(line.startsWith(SyntaxManager._OPENPB) 
+					&& line.endsWith(SyntaxManager._CLOSEPB)) return getBoolean(line);
+			
+			String[] spl = line.split(SyntaxManager._EQUAL);
+			return getValue(spl[0]).equals(getValue(spl[1]));
 		}
 	}
 	
@@ -613,27 +858,10 @@ public class Runtime {
 		
 		if(Runtime.isArrayList(value)) {
 			return Runtime.getList(value);
-		} else if(Runtime.containsFunctionByName(f)) {
-			SyntaxManager.callFunction(str, new Parser(Runtime.file));
-			
-			BFunction function = Runtime.getFunctionFromName(f);
-			
-			Object returned = function.getReturnValue();
-			
-			Object val = getValue(returned
-					.toString());
-			
-			return val;
-		} else if(Runtime.containsVariableByName(str)) {
-			return Runtime.getVariableFromName(str).getValue();
-		} else if(Runtime.isBoolean(str)) {
-			return Runtime.getBoolean(str);
 		} else if (Runtime.isDouble(str)) {
 			try {
-				return Double.parseDouble(SyntaxManager
-						.solveArithmeticFromString(str)
-						.toString());
-			} catch (NumberFormatException | ScriptException e) {
+				return getDouble(value.toString());
+			} catch (NumberFormatException e) {
 				return value;
 			}
 		} else if (Runtime.isInteger(str)) {
@@ -658,10 +886,22 @@ public class Runtime {
 			}
 			
 			return list;
-		} else if (Runtime.isString(str)) {
+		} else if(Runtime.isString(str)) {
 			return Runtime.getStringValue(str);
+		} else if(Runtime.containsFunctionByName(f)) {
+			SyntaxManager.callFunction(str, new Parser(Runtime.file));
+					
+			BFunction function = Runtime.getFunctionFromName(f);
+					
+			Object returned = function.getReturnValue();
+					
+			Object val = getValue(returned);
+					
+			return val;
+			} else if(Runtime.containsVariableByName(str)) {
+				return Runtime.getVariableFromName(str).getValue();
 		} else {
-			return value;
+			return Runtime.getBoolean(value);
 		}
 	}
 	
@@ -684,6 +924,13 @@ public class Runtime {
 		} else {
 			return Runtime.getTypeFromName("object");
 		}
+	}
+	
+	public static boolean isFunction(String string) {
+		String name = SyntaxManager.getStringUntilString(string, SyntaxManager._OPENPB)
+				.trim();
+		
+		return Runtime.containsFunctionByName(name);
 	}
 	
 	public static boolean compareToValues(String value1, String value2) {

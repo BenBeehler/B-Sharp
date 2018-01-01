@@ -46,6 +46,8 @@ public class Parser {
 			String first = split[0].trim();
 			String f = SyntaxManager.getStringUntilString(line, SyntaxManager
 					._OPENPB);
+			String fbracket = SyntaxManager.getStringUntilString(line, "=>")
+					.trim();
 			
 			if(this.getScanTime() == 0) {
 				if(currentFunction.equals(Runtime.main)) {
@@ -55,8 +57,16 @@ public class Parser {
 						SyntaxManager.parseType(line, this);
 					} else if (first.equals("func")) {
 						SyntaxManager.parseFunction(line, this);
+					} else if(first.equals("nimport")) {
+						SyntaxManager.importNativeFunction(line, this);
+					} else if(first.equals("cimport")) {
+						SyntaxManager.importCategory(line, this);
+					} else if(first.equals("category")) {
+						SyntaxManager.parseCategory(line, this);
 					} else if (first.equals("import")) {
 						SyntaxManager.parseImport(line);
+					} else if(Runtime.containsTypeByName(fbracket)) {
+						SyntaxManager.parseTypeVar(line, this);
 					} else {
 					}
 				} else {
@@ -69,8 +79,6 @@ public class Parser {
 				if(currentFunction == Runtime.main) {	
 					if (f.equals("if")) {
 						SyntaxManager.parseIfStatement(line, this);
-					} else if (f.equals("!if")) {
-						SyntaxManager.parseNotIfStatement(line, this);
 					} else if (f.equals("loop")) {
 						SyntaxManager.parseLoopStatement(line, this);
 					} else if(Runtime.containsFunctionByName(f)) {

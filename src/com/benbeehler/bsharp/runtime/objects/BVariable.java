@@ -65,12 +65,15 @@ public class BVariable implements BObject {
 
 	public void inherit(BVariable var, Parser parser) {
 		if(var.getSubVariables() != null) {
-			for(BVariable inh : var.getSubVariables()) {
-				addSubVariable(inh);
-				
-				BVariable newInh = new BVariable(this.getName() + "->" + inh.getName(), inh.getValue(),
-						parser.getFile(), inh.getAccess());
-				Runtime.addVariable(newInh);
+			if(var.getSubVariables().size() != 0) {
+				for(BVariable inh : var.getSubVariables()) {
+					addSubVariable(inh);
+					
+					BVariable newInh = new BVariable(this.getName() + "->" + inh.getName(), inh.getValue(),
+							parser.getFile(), inh.getAccess());
+					inherit(newInh, parser);
+					Runtime.addVariable(newInh);
+				}
 			}
 		}
 	}

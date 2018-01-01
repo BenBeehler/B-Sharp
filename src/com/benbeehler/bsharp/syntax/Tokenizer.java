@@ -53,6 +53,16 @@ public class Tokenizer {
 						array[x] = SyntaxManager._OPENPB;
 					} else if(ch.equals(")")) {
 						array[x] = SyntaxManager._CLOSEPB;
+					} else if(ch.equals("&")) {
+						array[x] = SyntaxManager._STRSPLIT;
+					} else if(ch.equals("=")) {
+						if(array[x-1].equals("!")) {
+							array[x-1] = "";
+							array[x] = SyntaxManager._NOTEQUAL;
+						} else if(array[x-1].equals("=")) {
+							array[x-1] = "";
+							array[x] = SyntaxManager._EQUAL;
+						}
 					}
 				}
 			}

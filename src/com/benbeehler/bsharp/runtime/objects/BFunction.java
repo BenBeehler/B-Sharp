@@ -21,6 +21,8 @@ public class BFunction implements BObject {
 	private Runnable nativeRunnable;
 	private Parser parser;
 	
+	private String category = "";
+	
 	private ArrayList<BVariable> parameters;
 	
 	private ArrayList<String> lines = 
@@ -159,8 +161,6 @@ public class BFunction implements BObject {
 				SyntaxManager.parseVariable(line, parser);
 			} else if (f.equals("if")) {
 				SyntaxManager.parseIfStatement(line, parser);
-			} else if (f.equals("!if")) {
-				SyntaxManager.parseNotIfStatement(line, parser);
 			} else if (f.equals("loop")) {
 				SyntaxManager.parseLoopStatement(line, parser);
 			} else if(Runtime.containsFunctionByName(f)) {
@@ -201,5 +201,14 @@ public class BFunction implements BObject {
 
 	public void setParser(Parser parser) {
 		this.parser = parser;
+	}
+
+	public String getCategory() {
+		return category;
+	}
+
+	public void setCategory(String category) {
+		this.category = category;
+		this.name = category + "::" + name;
 	}
 }

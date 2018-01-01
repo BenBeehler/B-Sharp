@@ -9,11 +9,11 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
 import com.benbeehler.bsharp.Console;
+import com.benbeehler.bsharp.runtime.Runtime;
 import com.benbeehler.bsharp.runtime.objects.AccessModifier;
 import com.benbeehler.bsharp.runtime.objects.BFunction;
 import com.benbeehler.bsharp.runtime.objects.BType;
 import com.benbeehler.bsharp.runtime.objects.BVariable;
-import com.benbeehler.bsharp.runtime.Runtime;
 
 /*
  * complete syntax parser
@@ -24,9 +24,61 @@ public class SyntaxManager {
 	public static String _PARAMETER_SPLIT_COMMA = "psc_runt_splitv001";
 	public static String _OPENPB = "open_pb_runt_splitv001";
 	public static String _CLOSEPB = "close_pb_runt_splitv001";
+	public static String _STRSPLIT = "str_splitv0001spl";
+	public static String _EQUAL = "valcompar_equal0001splstr";
+	public static String _NOTEQUAL = "valcompar_NOTequal0001splstr";
 	
 	public static String getStringUntilChar(String string, char ch) {
 		return string.split(String.valueOf(ch))[0];
+	}
+	
+	public static String raw(String string) {
+		string = string.replaceAll(SyntaxManager._PARAMETER_SPLIT_COMMA, ",")
+				.replaceAll(_OPENPB, "(")
+				.replaceAll(_CLOSEPB, ")")
+				.replaceAll(_STRSPLIT, "&")
+				.replaceAll(_EQUAL, "==")
+				.replaceAll(_NOTEQUAL, "!=");
+		return string;
+	}
+	
+	public static String[] splitByMiddle(String string, String delimeter) {
+		int[] indexes = getIndexes(string, delimeter); 
+		int middle = indexes[(indexes.length/2)-1];
+		
+		String[] result = new String[2];
+		
+		ArrayList<String> first = new ArrayList<>();
+		String[] split = string.split("");
+		for(int i = 0; i < middle; i++) {
+			first.add(split[i]);
+		}
+		
+		String one = convert(first.toArray(new String[first.size()]));
+		String[] twoArray = string.replaceFirst(one, "").split("");
+		String two = convert(twoArray);
+		two = two.replaceFirst(delimeter, "");
+		result[0] = one;
+		result[1] = two;
+		return result;
+	}
+	
+	public static int[] getIndexes(String word, String split) {
+		int index = word.indexOf(split);
+		ArrayList<Integer> list = new ArrayList<>();
+		list.add(index);
+		while(index >= 0) {
+		   index = word.indexOf(split, index+1);
+		   list.add(index);
+		}
+		
+		Object[] oarray = list.toArray(new Object[list.size()]);
+		int[] result = new int[oarray.length];
+		for(int i = 0; i < oarray.length; i++) {
+			result[i] = Integer.parseInt(oarray[i].toString());
+		}
+		
+		return result;
 	}
 	
 	public static String getStringUntilString(String string, String str) {
@@ -40,6 +92,12 @@ public class SyntaxManager {
 			sb.append(s);
 		}
 		
+		return sb.toString();
+	}
+	
+	public static String reverse(String string) {
+		StringBuilder sb = new StringBuilder(string);
+		sb = sb.reverse();
 		return sb.toString();
 	}
 	
@@ -206,7 +264,9 @@ public class SyntaxManager {
 					
 						//Get all primitive types
 						
-						if(typ == Runtime.getTypeFromName("object")) {
+						if(typ.equals(Runtime.getTypeFromName("byte"))) {
+							
+						} else if(typ == Runtime.getTypeFromName("object")) {
 							Object value = Runtime.getValue(line);
 						
 							variable.setValue(value);
@@ -668,13 +728,14 @@ public class SyntaxManager {
 		
 		if(pbrackets.startsWith(SyntaxManager._OPENPB) &&
 				pbrackets.endsWith(SyntaxManager._CLOSEPB)) {
-			pbrackets = pbrackets.replaceAll(SyntaxManager._OPENPB, "").trim();
+			pbrackets = pbrackets.replaceFirst(SyntaxManager._OPENPB, "").trim();
 			pbrackets = pbrackets.replaceAll(SyntaxManager._CLOSEPB, "").trim();
 			
 			String[] comma = pbrackets.split(SyntaxManager
 					._PARAMETER_SPLIT_COMMA);
 			if(comma.length != 0) {
 				for(String parameter : comma) {
+					parameter = parameter.trim();
 					String[] pDetails = parameter.split(" ");
 					if(pDetails.length >= 2) {
 						String vName = pDetails[0];
@@ -791,7 +852,9 @@ public class SyntaxManager {
 		if(line.startsWith(SyntaxManager._OPENPB)) {
 			if(line.endsWith(SyntaxManager._CLOSEPB)) {
 				line = line.replaceFirst(SyntaxManager._OPENPB, "");
-				line = line.replaceFirst(SyntaxManager._CLOSEPB, "");
+				line = reverse(line);
+				line = line.replaceFirst(reverse(SyntaxManager._CLOSEPB), "");
+				line = reverse(line);
 				
 				line = line.trim();
 				
@@ -803,8 +866,6 @@ public class SyntaxManager {
 				if(spl.length != 0) {
 					for(String entry : spl) {
 						entry = entry.trim();
-						
-						//System.out.println(entry + " : " + Runtime.containsVariableByName(entry));
 						
 						values.add(Runtime.getValue(entry));
 					}
@@ -847,9 +908,8 @@ public class SyntaxManager {
 		
 		if(line.startsWith(SyntaxManager._OPENPB)) {
 			line = line.replaceFirst(SyntaxManager._OPENPB, "");
+			String val = SyntaxManager.getStringUntilString(line, SyntaxManager._CLOSEPB);
 			line = line.replaceFirst(SyntaxManager._CLOSEPB, "");
-			
-			String val = line.split(" ")[0].trim();
 			
 			Object value = Runtime.getValue(val);
 				
@@ -874,39 +934,6 @@ public class SyntaxManager {
 		}
 	}
 	
-	public static void parseNotIfStatement(String line, Parser parser) {
-		line = line.replaceFirst("!if", "")
-				.trim();
-		
-		if(line.startsWith(SyntaxManager._OPENPB)) {
-			line = line.replaceFirst(SyntaxManager._OPENPB, "");
-			line = line.replaceFirst(SyntaxManager._CLOSEPB, "");
-			
-			String val = line.split(" ")[0].trim();
-			
-			Object value = Runtime.getValue(val);
-				
-			if(Runtime.isBoolean(value.toString())) {
-				boolean v = Runtime.getBoolean(value.toString());
-					
-				line = line.replace(val, "")
-							.trim();
-					
-				if(v == false) {
-					if(line.split(" ")[0].equals("return")) {
-						SyntaxManager.parseReturn(line, parser);
-					} else {
-						SyntaxManager.callFunction(line, parser);
-					}
-				}
-			} else {
-				Console.E("Malformed Syntax: if => expected integer or boolean, recieved different");
-			}
-		} else {
-			Console.E("Malformed Syntax: if statement is malformed...");
-		}
-	}
-	
 	public static void parseLoopStatement(String line, Parser parser) {
 		line = line.replaceFirst("loop", "")
 				.trim();
@@ -914,9 +941,8 @@ public class SyntaxManager {
 		if(line.startsWith(SyntaxManager._OPENPB)) {
 			if(line.endsWith(SyntaxManager._CLOSEPB)) {
 				line = line.replaceFirst(SyntaxManager._OPENPB, "");
+				String val = SyntaxManager.getStringUntilString(line, SyntaxManager._CLOSEPB);
 				line = line.replaceFirst(SyntaxManager._CLOSEPB, "");
-			
-				String val = line.split(" ")[0].trim();
 			
 				Object value = Runtime.getValue(val);
 				
@@ -929,7 +955,8 @@ public class SyntaxManager {
 					for(int i = 0; i < v; i++) {
 						SyntaxManager.callFunction(line, parser);
 					}
-				} else if(Runtime.isBoolean(value.toString())) {
+				} else {
+					System.out.println(value.toString());
 					boolean bool = Runtime.getBoolean(value.toString());
 					
 					line = line.replace(val, "")
@@ -938,8 +965,6 @@ public class SyntaxManager {
 					while(bool) {
 						SyntaxManager.callFunction(line, parser);
 					}
-				} else {
-					Console.E("Malformed Syntax: loop => expected integer or boolean, recieved different");
 				}
 			} else {
 				Console.E("Malformed Syntax: loop statement is malformed...");
@@ -947,6 +972,32 @@ public class SyntaxManager {
 		} else {
 			Console.E("Malformed Syntax: loop statement is malformed...");
 		}
+	}
+	
+	public static void parseCategory(String line, Parser parser) {
+		
+	}
+	
+	public static void importCategory(String string, Parser parser) {
+		string = string.replaceFirst("cimport", "");
+		
+		String category = string.trim();
+		if(Runtime.categories.contains(category)) {
+			for(BFunction function : Runtime.functions) {
+				if(function.getCategory().equals(category)) {
+					function.setName(function.getName().replaceFirst(category + "::", "").trim());
+				}
+ 			}
+		} else {
+			Console.E("failed to import category: does not exist");
+		}
+	}
+	
+	public static void importNativeFunction(String string, Parser parser) { 
+		string = string.replaceFirst("nimport", "");
+		
+		String function = string.trim();
+		Runtime.importNative(function);
 	}
 	
 	public static void parseReturn(String string, Parser parser) {
@@ -969,6 +1020,41 @@ public class SyntaxManager {
 		new Thread(() -> {
 			SyntaxManager.callFunction(newline, parser);
 		}).start();
+	}
+	
+	public static void parseTypeVar(String line, Parser parser) {
+		String tstring = SyntaxManager
+				.getStringUntilString(line, "=>");
+		String tName = tstring.trim();
+		if(!Runtime.containsTypeByName(tName)) {
+			Console.E("specified type being binded does not exist");
+		}
+		
+		BType type = Runtime.getType(tName);
+		
+		line = line.replaceFirst(tName, "").replaceFirst("=>", "")
+				.trim();
+		String[] split = line.split(" ");
+		if(!(split.length == 2)) {
+			Console.E("specified expression binding type has invalid variable and type counts");
+		} 
+		
+		String vName = split[0];
+		String vTName = split[1];
+		
+		if(!Runtime.containsTypeByName(tName)) {
+			Console.E("specified variable type in binding does exist");
+		}
+		
+		BType vType = Runtime.getTypeFromName(vTName);
+		BVariable var = new BVariable(vName, Runtime.getVariableFromName("nil"),
+				parser.getFile(), AccessModifier.RESTRICTED);
+		var.setType(vType);
+		for(BVariable v : type.getVariables()) {
+			var.inherit(v, parser);
+		}
+		
+		type.addVariable(var);
 	}
 	
 	public static void parseImport(String line) {
