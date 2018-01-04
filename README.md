@@ -13,4 +13,4 @@ This language has 2 primary command usages:<br>
 -d is the debugger command, this prints out all objects and their respective values<br><br>
 
 # Documentation
-This is coming soon!
+https://benbeehler.gitbooks.io/b-sharp-programming-language/content/
