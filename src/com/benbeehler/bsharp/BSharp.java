@@ -78,8 +78,6 @@ public class BSharp {
 			} else {
 				Console.log("B# V" + VERSION);
 			}
-			
-			STDIO.STDIN.close();
 		} catch(StackOverflowError e) {
 			Console.E("critical program failure, stack overflow error");
 		}
