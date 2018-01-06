@@ -18,9 +18,7 @@ public class BSharp {
 	
 	public static void main(String[] args) throws ScriptException {
 		try {
-			Runtime.init(new File("C:/users/benbe/desktop/program.b#"));
-			//Runtime.print_debug();
-			/*if(args.length >= 2) {
+			if(args.length >= 2) {
 				String command = args[0];
 				File file = new File(args[1]);
 				
@@ -81,7 +79,7 @@ public class BSharp {
 				Console.log("B# V" + VERSION);
 			}
 			
-			STDIO.STDIN.close();*/
+			STDIO.STDIN.close();
 		} catch(StackOverflowError e) {
 			Console.E("critical program failure, stack overflow error");
 		}
