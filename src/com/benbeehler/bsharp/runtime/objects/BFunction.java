@@ -2,7 +2,6 @@ package com.benbeehler.bsharp.runtime.objects;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.List;
 
 import com.benbeehler.bsharp.runtime.Runtime;
 import com.benbeehler.bsharp.syntax.Parser;
@@ -129,19 +128,21 @@ public class BFunction implements BObject {
 			this.executeLines();
 		}
 		
-		List<BVariable> remove = new ArrayList<>();
+		/*List<BVariable> remove = new ArrayList<>();
 		
 		for(BVariable var : Runtime.variables) {
-			if(var.getFunction().equals(this)) {
-				if(!this.getParameters().contains(var)) {
-					remove.add(var);
+			if(var != null || var.getFunction() != null || this != null) {
+				if(var.getFunction().equals(this)) {
+					if(!this.getParameters().contains(var)) {
+						remove.add(var);
+					}
 				}
 			}
 		}
 		
 		for(BVariable var : remove) {
 			Runtime.variables.remove(var);
-		}
+		}*/
 	}
 	
 	public void executeLines() {
@@ -169,6 +170,8 @@ public class BFunction implements BObject {
 				SyntaxManager.parseReturn(line, parser);
 			} else if(line.startsWith("thread::")) {
 				SyntaxManager.parseThread(line, parser);
+			} else if(Runtime.containsVariableByName(first)) {
+				SyntaxManager.remapMutable(line, parser);
 			} else {
 				
 			}
@@ -179,7 +182,24 @@ public class BFunction implements BObject {
 		this.lines.add(line);
 	}
 
+	
+	public boolean containsParameterByName(String name) {
+		return this.getParameters().stream().filter(var ->
+				var.getName().equals(name))
+				.findAny()
+				.isPresent();
+	}
 
+	public BVariable getParameterFromName(String name) {
+		if(this.containsParameterByName(name)) {
+			return this.getParameters().stream().filter(var -> var.getName().equals(name))
+					.findAny()
+					.get();
+		} 
+		
+		return Runtime.getVariableFromName("nil");
+	}
+	
 	public Runnable getNativeRunnable() {
 		return nativeRunnable;
 	}

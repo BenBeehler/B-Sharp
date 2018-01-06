@@ -2,14 +2,16 @@ package com.benbeehler.bsharp.runtime.objects;
 
 import java.util.ArrayList;
 
+import com.benbeehler.bsharp.syntax.Parser;
 
-@Deprecated
+
 public class Block {
 	
 	/*
 	 * As of right now, this class has not merit on the program and is deprecated
 	 */
 	
+	private boolean executes = false;
 	private ArrayList<String> lines = 
 			new ArrayList<String>();
 	
@@ -23,9 +25,8 @@ public class Block {
 	}
 	
 	public void execute() {
-		this.lines.stream().forEach(e -> {
-			//TODO e is the line
-		});
+		Parser parser = new Parser(lines);
+		parser.start();
 	}
 	
 	public void addLine(String line) {
@@ -34,5 +35,13 @@ public class Block {
 	
 	public ArrayList<String> getLines() {
 		return this.lines;
+	}
+
+	public boolean doesExecute() {
+		return executes;
+	}
+
+	public void setExecute(boolean executes) {
+		this.executes = executes;
 	}
 }

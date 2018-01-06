@@ -27,9 +27,24 @@ public class SyntaxManager {
 	public static String _STRSPLIT = "str_splitv0001spl";
 	public static String _EQUAL = "valcompar_equal0001splstr";
 	public static String _NOTEQUAL = "valcompar_NOTequal0001splstr";
+	public static String _LISTSPLIT = "__arrayvalidentsplit00v001splstr";
+	public static String _LAMBDA = "__lambdaexpresstringparserintsplstrv001";
+	public static String _COLON = "____cololoopparsestrfunctionalitystringparserintsplstrv001";
 	
 	public static String getStringUntilChar(String string, char ch) {
 		return string.split(String.valueOf(ch))[0];
+	}
+	
+	public static String[] split(String string, String[] delimeters) {
+		if(delimeters.length > 1) {
+			for(String delimeter : delimeters) {
+				string = string.replace(delimeter, delimeters[0]);
+			}
+			
+			return string.split(delimeters[0]);
+		} else {
+			return string.split(delimeters[0]);
+		}
 	}
 	
 	public static String raw(String string) {
@@ -38,7 +53,10 @@ public class SyntaxManager {
 				.replaceAll(_CLOSEPB, ")")
 				.replaceAll(_STRSPLIT, "&")
 				.replaceAll(_EQUAL, "==")
-				.replaceAll(_NOTEQUAL, "!=");
+				.replaceAll(_NOTEQUAL, "!=")
+				.replaceAll(_LISTSPLIT, ";")
+				.replaceAll(_LAMBDA, "=>")
+				.replaceAll(_COLON, ":");
 		return string;
 	}
 	
@@ -90,6 +108,16 @@ public class SyntaxManager {
 		
 		for(String s : str) {
 			sb.append(s);
+		}
+		
+		return sb.toString();
+	}
+	
+	public static String convert(String[] str, String del) {
+		StringBuilder sb = new StringBuilder();
+		
+		for(String s : str) {
+			sb.append(s + del);
 		}
 		
 		return sb.toString();
@@ -165,17 +193,15 @@ public class SyntaxManager {
 	}
 	
 	
-	public static Object solveArithmeticFromString (String ar) throws ScriptException {
+	public static Object solveArithmeticFromString(String ar) throws ScriptException {
         /*
-         * This code is really trashy
+         * This code is garbage
          */
-
 		ar = Runtime.replaceVariableNamesWithValues(ar);
 		
         ScriptEngine engine = new ScriptEngineManager().getEngineByName("JavaScript");
-        return engine.eval(ar.replace(" ", "")); 
+        return engine.eval(ar.replaceAll(" ", ""));
     }
-	
 	
 	public static void parseVariable(String line, Parser parser) {
 		//var variable string = ""
@@ -189,7 +215,15 @@ public class SyntaxManager {
 		String[] split = 
 				line.split(" ");
 		
-		if (split.length >= 3) {
+		if(split[0].equalsIgnoreCase("mutable")) {
+			variable.setMutable(true);
+			split[0] = "";
+		}
+		
+		line = convert(split, " ").trim();
+		split = line.split(" ");
+		
+		if(split.length >= 3) {
 			String name = split[0];
 			
 			variable.setName(name);
@@ -209,8 +243,8 @@ public class SyntaxManager {
 				//CHECK VARIABLE'S VALUE TO DETERMINE TYPE
 				if(Runtime.containsTypeByName(line)) {
 					BType t = Runtime.getType(line);
-					Object v = Runtime.getValue(line);
-				
+					Object v = Runtime.getValue(line, parser);
+					
 					variable.setType(t);
 					variable.setValue(v);
 					variable.setFile(parser.getFile());
@@ -226,9 +260,9 @@ public class SyntaxManager {
 					
 					Runtime.variables.add(variable);
 				} else {
-					Object v = Runtime.getValue(line);
+					Object v = Runtime.getValue(line, parser);
 					BType t = Runtime.getType(v.toString());
-				
+					
 					variable.setType(t);
 					variable.setValue(v);
 					variable.setFile(parser.getFile());
@@ -267,7 +301,7 @@ public class SyntaxManager {
 						if(typ.equals(Runtime.getTypeFromName("byte"))) {
 							
 						} else if(typ == Runtime.getTypeFromName("object")) {
-							Object value = Runtime.getValue(line);
+							Object value = Runtime.getValue(line, parser);
 						
 							variable.setValue(value);
 							variable.setFile(parser.getFile());
@@ -284,7 +318,7 @@ public class SyntaxManager {
 							
 							Runtime.addVariable(variable);
 						} else if(typ == Runtime.getTypeFromName("string")) {
-							String value = Runtime.getValue(line).toString();
+							String value = Runtime.getValue(line, parser).toString();
 							
 							variable.setValue(value);
 							variable.setFile(parser.getFile());
@@ -301,7 +335,7 @@ public class SyntaxManager {
 							
 							Runtime.addVariable(variable);
 						} else if(typ == Runtime.getTypeFromName("integer")) {
-							String value = Runtime.getValue(line).toString();
+							String value = Runtime.getValue(line, parser).toString();
 							
 							if(Runtime.isInteger(value)) {
 								variable.setValue(Runtime.getInteger(value));
@@ -337,7 +371,7 @@ public class SyntaxManager {
 								Console.E("Internal Error: Invalid value for given type...");
 							}
 						} else if(typ == Runtime.getTypeFromName("double")) {
-							String value = Runtime.getValue(line).toString();
+							String value = Runtime.getValue(line, parser).toString();
 						
 							if(Runtime.isDouble(value) || Runtime.isInteger(value)) {
 								variable.setValue(Runtime.getDouble(value));
@@ -374,7 +408,7 @@ public class SyntaxManager {
 							}
 						
 						} else if(typ == Runtime.getTypeFromName("boolean")) {
-							Object value = Runtime.getValue(line);
+							Object value = Runtime.getValue(line, parser);
 						
 							if(Runtime.isBoolean(value.toString())) {
 								variable.setValue(Runtime.getBoolean(value.toString()));
@@ -395,7 +429,7 @@ public class SyntaxManager {
 								Console.E("Internal Error: Invalid value for given type...");
 							}
 						} else if(typ == Runtime.getTypeFromName("list")) {
-							Object value = Runtime.getValue(line);
+							Object value = Runtime.getValue(line, parser);
 							
 							if(Runtime.isArray(value.toString())) {
 								variable.setValue(Runtime.getList(value.toString()));
@@ -432,7 +466,7 @@ public class SyntaxManager {
 							}
 						} else {
 							//CHECK VARIABLE'S VALUE TO DETERMINE TYPE
-							Object v = Runtime.getValue(line);
+							Object v = Runtime.getValue(line, parser);
 							BType t = Runtime.getType(v.toString());
 							
 							variable.setType(t);
@@ -460,27 +494,21 @@ public class SyntaxManager {
 				}
 			}
 		} else {
-			Console.E("Variable declaration is malformed.. (" + line + ")");
+			Console.E("Variable declaration is malformed.. (" + raw(line) + ")");
 		}
 	}
 	
-	/*public static void reinstantiateVariable (String line, Parser parser) {
+	public static void remapMutable(String line, Parser parser) {
 		//var variable string = ""
-		BVariable variable;
-		variable = new BVariable(null, null, null, null);
+		String[] split = line.split(" ");
+		String name = split[0];
+		BVariable variable = Runtime.getVariableFromName(name);
 		
-		String[] split = 
-				line.split(" ");
+		if(!variable.isMutable()) {
+			Console.E(name + " is not mutable!");
+		}
 		
-		if (split.length >= 3) {
-			String name = split[0];
-			
-			if(!Runtime.containsVariableByName(name)) {
-				Console.E("Internal Error: " + name + " does not exist!");
-			}
-			
-			Runtime.variables.remove(Runtime.getVariableFromName(name));
-			
+		if(split.length >= 3) {
 			variable.setName(name);
 			
 			line = line.replaceFirst(name, "")
@@ -496,23 +524,43 @@ public class SyntaxManager {
 						.trim();
 				
 				//CHECK VARIABLE'S VALUE TO DETERMINE TYPE
-				Object v = Runtime.getValue(line);
-				BType t = Runtime.getType(v.toString());
-			
-				variable.setType(t);
-				variable.setValue(v);
-				variable.setFile(parser.getFile());
-				variable.setFunction(parser.getCurrentFunction());
+				if(Runtime.containsTypeByName(line)) {
+					BType t = Runtime.getType(line);
+					Object v = Runtime.getValue(line, parser);
 				
-				if(name.startsWith("!")) {
-					variable.setAccessModifier(AccessModifier.UNIVERSAL);
-				} else if (parser.getCurrentFunction() == null) {
-					variable.setAccessModifier(AccessModifier.GLOBAL);
+					variable.setType(t);
+					variable.setValue(v);
+					variable.setFile(parser.getFile());
+					variable.setFunction(parser.getCurrentFunction());
+					
+					if(name.startsWith("!")) {
+						variable.setAccessModifier(AccessModifier.UNIVERSAL);
+					} else if (parser.getCurrentFunction() == null) {
+						variable.setAccessModifier(AccessModifier.GLOBAL);
+					} else {
+						variable.setAccessModifier(AccessModifier.RESTRICTED);
+					}
+					
+					Runtime.variables.add(variable);
 				} else {
-					variable.setAccessModifier(AccessModifier.RESTRICTED);
+					Object v = Runtime.getValue(line, parser);
+					BType t = Runtime.getType(v.toString());
+					
+					variable.setType(t);
+					variable.setValue(v);
+					variable.setFile(parser.getFile());
+					variable.setFunction(parser.getCurrentFunction());
+					
+					if(name.startsWith("!")) {
+						variable.setAccessModifier(AccessModifier.UNIVERSAL);
+					} else if (parser.getCurrentFunction() == null) {
+						variable.setAccessModifier(AccessModifier.GLOBAL);
+					} else {
+						variable.setAccessModifier(AccessModifier.RESTRICTED);
+					}
+					
+					Runtime.variables.add(variable);
 				}
-				
-				Runtime.variables.add(variable);
 			} else {
 				if (Runtime.containsTypeByName(type)) {
 					BType typ = 
@@ -532,9 +580,11 @@ public class SyntaxManager {
 						split = line.split(" ");
 					
 						//Get all primitive types
-					
-						if(typ == Runtime.getTypeFromName("object")) {
-							Object value = Runtime.getValue(line);
+						
+						if(typ.equals(Runtime.getTypeFromName("byte"))) {
+							
+						} else if(typ == Runtime.getTypeFromName("object")) {
+							Object value = Runtime.getValue(line, parser);
 						
 							variable.setValue(value);
 							variable.setFile(parser.getFile());
@@ -551,7 +601,7 @@ public class SyntaxManager {
 							
 							Runtime.addVariable(variable);
 						} else if(typ == Runtime.getTypeFromName("string")) {
-							String value = Runtime.getValue(line).toString();
+							String value = Runtime.getValue(line, parser).toString();
 							
 							variable.setValue(value);
 							variable.setFile(parser.getFile());
@@ -568,10 +618,25 @@ public class SyntaxManager {
 							
 							Runtime.addVariable(variable);
 						} else if(typ == Runtime.getTypeFromName("integer")) {
-							String value = Runtime.getValue(line).toString();
-						
+							String value = Runtime.getValue(line, parser).toString();
+							
 							if(Runtime.isInteger(value)) {
 								variable.setValue(Runtime.getInteger(value));
+								variable.setFile(parser.getFile());
+								variable.setType(Runtime.getTypeFromName("integer"));
+								variable.setFunction(parser.getCurrentFunction());
+							
+								if(variable.getName().startsWith("!")) {
+									variable.setAccessModifier(AccessModifier.UNIVERSAL);
+								} else if(variable.getFunction() != null) {
+									variable.setAccessModifier(AccessModifier.GLOBAL);
+								} else {
+									variable.setAccessModifier(AccessModifier.RESTRICTED);
+								}
+							
+								Runtime.addVariable(variable);
+							} else if(value.toString().equals("null")) {
+								variable.setValue("null");
 								variable.setFile(parser.getFile());
 								variable.setType(Runtime.getTypeFromName("integer"));
 								variable.setFunction(parser.getCurrentFunction());
@@ -589,10 +654,25 @@ public class SyntaxManager {
 								Console.E("Internal Error: Invalid value for given type...");
 							}
 						} else if(typ == Runtime.getTypeFromName("double")) {
-							String value = Runtime.getValue(line).toString();
+							String value = Runtime.getValue(line, parser).toString();
 						
-							if(Runtime.isDouble(value)) {
+							if(Runtime.isDouble(value) || Runtime.isInteger(value)) {
 								variable.setValue(Runtime.getDouble(value));
+								variable.setFile(parser.getFile());
+								variable.setType(Runtime.getTypeFromName("double"));
+								variable.setFunction(parser.getCurrentFunction());
+							
+								if(variable.getName().startsWith("!")) {
+									variable.setAccessModifier(AccessModifier.UNIVERSAL);
+								} else if(variable.getFunction() != null) {
+									variable.setAccessModifier(AccessModifier.GLOBAL);
+								} else {
+									variable.setAccessModifier(AccessModifier.RESTRICTED);
+								}
+							
+								Runtime.addVariable(variable);
+							} else if(value.toString().equals("null")) {
+								variable.setValue("null");
 								variable.setFile(parser.getFile());
 								variable.setType(Runtime.getTypeFromName("double"));
 								variable.setFunction(parser.getCurrentFunction());
@@ -611,7 +691,7 @@ public class SyntaxManager {
 							}
 						
 						} else if(typ == Runtime.getTypeFromName("boolean")) {
-							Object value = Runtime.getValue(line);
+							Object value = Runtime.getValue(line, parser);
 						
 							if(Runtime.isBoolean(value.toString())) {
 								variable.setValue(Runtime.getBoolean(value.toString()));
@@ -632,47 +712,46 @@ public class SyntaxManager {
 								Console.E("Internal Error: Invalid value for given type...");
 							}
 						} else if(typ == Runtime.getTypeFromName("list")) {
-							Object o = Runtime.getValue(line);
+							Object value = Runtime.getValue(line, parser);
 							
-							ArrayList<?> val = (ArrayList<?>) o;
+							if(Runtime.isArray(value.toString())) {
+								variable.setValue(Runtime.getList(value.toString()));
+								variable.setFile(parser.getFile());
+								variable.setType(Runtime.getTypeFromName("list"));
+								variable.setFunction(parser.getCurrentFunction());
 							
-							variable.setValue(val);
-							variable.setFile(parser.getFile());
-							variable.setType(Runtime.getTypeFromName("list"));
-							variable.setFunction(parser.getCurrentFunction());
+								if(variable.getName().startsWith("!")) {
+									variable.setAccessModifier(AccessModifier.UNIVERSAL);
+								} else if(variable.getFunction() != null) {
+									variable.setAccessModifier(AccessModifier.GLOBAL);
+								} else {
+									variable.setAccessModifier(AccessModifier.RESTRICTED);
+								}
 							
-							if(variable.getName().startsWith("!")) {
-								variable.setAccessModifier(AccessModifier.UNIVERSAL);
-							} else if(variable.getFunction() != null) {
-								variable.setAccessModifier(AccessModifier.GLOBAL);
+								Runtime.addVariable(variable);
+							} else if(value.toString().equals("null")) {
+								variable.setValue("null");
+								variable.setFile(parser.getFile());
+								variable.setType(Runtime.getTypeFromName("list"));
+								variable.setFunction(parser.getCurrentFunction());
+							
+								if(variable.getName().startsWith("!")) {
+									variable.setAccessModifier(AccessModifier.UNIVERSAL);
+								} else if(variable.getFunction() != null) {
+									variable.setAccessModifier(AccessModifier.GLOBAL);
+								} else {
+									variable.setAccessModifier(AccessModifier.RESTRICTED);
+								}
+							
+								Runtime.addVariable(variable);
 							} else {
-								variable.setAccessModifier(AccessModifier.RESTRICTED);
-							}
-							
-							Runtime.addVariable(variable);
-							
-							//cycle through every value and add it
-							
-							for(int i = 0; i < val.size(); i++) {
-								Object newV = Runtime.getValue(val.get(i).toString());
-								BType newT = Runtime.getType(newV.toString());
-								
-								BVariable l = new BVariable(null, null, null, null);
-								
-								l.setValue(newV);
-								l.setName(name + "[" + i + "]");
-								l.setFile(parser.getFile());
-								l.setType(newT);
-								l.setFunction(parser.getCurrentFunction());
-								l.setAccessModifier(variable.getAccess());
-								
-								Runtime.addVariable(l);
+								Console.E("Internal Error: Invalid value for given type...");
 							}
 						} else {
 							//CHECK VARIABLE'S VALUE TO DETERMINE TYPE
-							Object v = Runtime.getValue(line);
+							Object v = Runtime.getValue(line, parser);
 							BType t = Runtime.getType(v.toString());
-						
+							
 							variable.setType(t);
 							variable.setValue(v);
 							variable.setFile(parser.getFile());
@@ -698,9 +777,9 @@ public class SyntaxManager {
 				}
 			}
 		} else {
-			Console.E("Variable declaration is malformed.. (" + line + ")");
+			Console.E("Variable declaration is malformed.. (" + raw(line) + ")");
 		}
-	}*/
+	}
 	
 	public static void parseFunction(String line, Parser parser) {
 		//function main() {
@@ -751,7 +830,7 @@ public class SyntaxManager {
 						variable.setFunction(function);
 						variable.setType(type);
 						
-						Runtime.addVariable(variable);
+						//Runtime.addVariable(variable);
 				
 						ArrayList<BVariable> parameters = function.getParameters();
 						parameters.add(variable);
@@ -779,6 +858,9 @@ public class SyntaxManager {
 		BFunction function = 
 				new BFunction(null, null, null, null);
 		
+		Parser p = new Parser(parser.getFile());
+		function.setParser(p);
+		
 		line = line.replaceFirst("func", "")
 				.trim();
 		
@@ -793,15 +875,18 @@ public class SyntaxManager {
 				+ SyntaxManager._CLOSEPB).trim();
 		line = line.replace(pbrackets, "").trim();
 		
-		if(line.startsWith(SyntaxManager._OPENPB) &&
-				line.endsWith(SyntaxManager._CLOSEPB)) {
-			pbrackets = pbrackets.replaceAll(SyntaxManager._OPENPB, "").trim();
+		//System
+		
+		if(pbrackets.startsWith(SyntaxManager._OPENPB) &&
+				pbrackets.endsWith(SyntaxManager._CLOSEPB)) {
+			pbrackets = pbrackets.replaceFirst(SyntaxManager._OPENPB, "").trim();
 			pbrackets = pbrackets.replaceAll(SyntaxManager._CLOSEPB, "").trim();
 			
 			String[] comma = pbrackets.split(SyntaxManager
 					._PARAMETER_SPLIT_COMMA);
 			if(comma.length != 0) {
 				for(String parameter : comma) {
+					parameter = parameter.trim();
 					String[] pDetails = parameter.split(" ");
 					if(pDetails.length >= 2) {
 						String vName = pDetails[0];
@@ -810,14 +895,14 @@ public class SyntaxManager {
 						BType type = Runtime.getTypeFromName(vType);
 						
 						BVariable variable = new BVariable(vName,
-								null,
+								Runtime.getVariableFromName("nil").getValue(),
 								parser.getFile(), 
 								AccessModifier.RESTRICTED);
 						
-				
+						variable.setFunction(function);
 						variable.setType(type);
 						
-						Runtime.addVariable(variable);
+						//Runtime.addVariable(variable);
 				
 						ArrayList<BVariable> parameters = function.getParameters();
 						parameters.add(variable);
@@ -834,10 +919,78 @@ public class SyntaxManager {
 			parser.setCurrentFunction(function);
 			
 			function.setNative(false);
-		} 
+			//Runtime.addFunction(function);
+		} else {
+			
+		}
 	}
 	
 	public static void callFunction(String line, Parser parser) {
+		line = line.trim();
+		
+		String name = SyntaxManager.getStringUntilString(line, SyntaxManager._OPENPB)
+				.trim();
+		
+		if(!Runtime.containsFunctionByName(name)) Console.E("specified function does not exist (" + name + ")");
+		BFunction function = Runtime.getFunctionFromName(name);
+		
+		line = line.replaceFirst(name, "")
+				.trim();
+		
+		if(line.startsWith(SyntaxManager._OPENPB)) {
+			if(line.endsWith(SyntaxManager._CLOSEPB)) {
+				line = line.replaceFirst(SyntaxManager._OPENPB, "");
+				line = reverse(line);
+				line = line.replaceFirst(reverse(SyntaxManager._CLOSEPB), "");
+				line = reverse(line);
+				
+				line = line.trim();
+				
+				String[] spl =
+						line.split(SyntaxManager._PARAMETER_SPLIT_COMMA);
+				
+				ArrayList<Object> values = new ArrayList<Object>();
+				
+				if(spl.length != 0) {
+					for(String entry : spl) {
+						entry = entry.trim();
+						
+						values.add(Runtime.getValue(entry, parser));
+					}
+				}
+				
+				if(function.getParameters() != null) {
+					if(function.getParameters().size() != 0) {
+						if(values.size() == function.getParameters().size()) {
+							for(int i = 0; i < function.getParameters().size(); i++) {
+								BVariable var = function.getParameters().get(i);
+						
+								if(Runtime.containsVariableByName(values.get(i).toString())) {
+									var.inherit(Runtime.getVariableFromName(values.get(i).toString()), parser);
+								}
+								
+								var.setValue(values.get(i));
+							}
+						
+							function.execute(); //All parameters added... call function
+						} else {
+							Console.E("Malformed Syntax: Not enough given parameters for function...");
+						}
+					} else {
+						function.execute();
+					}
+				} else {
+					Console.E("severe error loading function parameters into memory, internal error");
+				}
+			} else {
+				Console.E("Malformed Syntax: Parameter list is malformed... (" + raw(line) + ")");
+			}
+		} else {
+			Console.E("Malformed Syntax: Parameter list is malformed... (" + raw(line) + ")");
+		}
+	}
+	
+	public static void callFunction(String line) {
 		line = line.trim();
 		
 		String name = SyntaxManager.getStringUntilString(line, SyntaxManager._OPENPB)
@@ -876,10 +1029,6 @@ public class SyntaxManager {
 						if(values.size() == function.getParameters().size()) {
 							for(int i = 0; i < function.getParameters().size(); i++) {
 								BVariable var = function.getParameters().get(i);
-						
-								if(Runtime.containsVariableByName(values.get(i).toString())) {
-									var.inherit(Runtime.getVariableFromName(values.get(i).toString()), parser);
-								}
 								
 								var.setValue(values.get(i));
 							}
@@ -895,82 +1044,94 @@ public class SyntaxManager {
 					Console.E("severe error loading function parameters into memory, internal error");
 				}
 			} else {
-				Console.E("Malformed Syntax: Parameter list is malformed... (" + line + ")");
+				Console.E("Malformed Syntax: Parameter list is malformed... (" + raw(line) + ")");
 			}
 		} else {
-			Console.E("Malformed Syntax: Parameter list is malformed... (" + line + ")");
+			Console.E("Malformed Syntax: Parameter list is malformed... (" + raw(line) + ")");
 		}
 	}
 	
 	public static void parseIfStatement(String line, Parser parser) {
 		line = line.replaceFirst("if", "")
 				.trim();
-		
-		if(line.startsWith(SyntaxManager._OPENPB)) {
-			line = line.replaceFirst(SyntaxManager._OPENPB, "");
-			String val = SyntaxManager.getStringUntilString(line, SyntaxManager._CLOSEPB);
-			line = line.replaceFirst(SyntaxManager._CLOSEPB, "");
 			
-			Object value = Runtime.getValue(val);
-				
-			if(Runtime.isBoolean(value.toString())) {
-				boolean v = Runtime.getBoolean(value.toString());
-					
-				line = line.replace(val, "")
-							.trim();
-					
-				if(v == true) {
-					if(line.split(" ")[0].equals("return")) {
-						SyntaxManager.parseReturn(line, parser);
-					} else {
-						SyntaxManager.callFunction(line, parser);
-					}
-				}
-			} else {
-				Console.E("Malformed Syntax: if => expected integer or boolean, recieved different");
+			if(!line.contains(SyntaxManager._LAMBDA)) {
+				Console.E("malformed syntax: if statement requires lambda (=>)");
 			}
+					
+			String[] split = line.split(SyntaxManager._LAMBDA);
+			String val = split[0];
+			line = split[1];
+					
+			val = val.replaceFirst(SyntaxManager._OPENPB, "");
+			val = reverse(val);
+			val = val.replaceFirst(reverse(SyntaxManager._CLOSEPB), "");
+			val = reverse(val);
+			boolean bool = Runtime.getBoolean(val);
+						
+			line = line.replace(val, "")
+					.trim();
+				
+			if(bool) {
+				for(String str : line.split(_COLON)) {
+					Parser.evaluate(str);
+				}
+					
+				bool = Runtime.getBoolean(val);
+			}
+	}
+	
+	public static void parseListLoop(String line, Parser parser) {
+		if(line.startsWith("(")) {
+			
 		} else {
-			Console.E("Malformed Syntax: if statement is malformed...");
+			
 		}
 	}
 	
 	public static void parseLoopStatement(String line, Parser parser) {
 		line = line.replaceFirst("loop", "")
-				.trim();
+			.trim();
 		
-		if(line.startsWith(SyntaxManager._OPENPB)) {
-			if(line.endsWith(SyntaxManager._CLOSEPB)) {
-				line = line.replaceFirst(SyntaxManager._OPENPB, "");
-				String val = SyntaxManager.getStringUntilString(line, SyntaxManager._CLOSEPB);
-				line = line.replaceFirst(SyntaxManager._CLOSEPB, "");
-			
-				Object value = Runtime.getValue(val);
+		if(!line.contains(SyntaxManager._LAMBDA)) {
+			Console.E("malformed syntax: loop statement requires lambda (=>)");
+		}
 				
-				if(Runtime.isInteger(value.toString())) {
-					int v = Runtime.getInteger(value.toString());
+		String[] split = line.split(SyntaxManager._LAMBDA);
+		String val = split[0];
+		line = split[1];
+				
+		val = val.replaceFirst(SyntaxManager._OPENPB, "");
+		val = reverse(val);
+		val = val.replaceFirst(reverse(SyntaxManager._CLOSEPB), "");
+		val = reverse(val);
+				
+		Object value = Runtime.getValue(val, parser);
+			
+		if(Runtime.isInteger(value.toString())) {
+			int v = Runtime.getInteger(value.toString());
 					
-					line = line.replace(val, "")
-							.trim();
+			line = line.replace(val, "")
+						.trim();
 					
-					for(int i = 0; i < v; i++) {
-						SyntaxManager.callFunction(line, parser);
-					}
-				} else {
-					System.out.println(value.toString());
-					boolean bool = Runtime.getBoolean(value.toString());
-					
-					line = line.replace(val, "")
-							.trim();
-					
-					while(bool) {
-						SyntaxManager.callFunction(line, parser);
-					}
+			for(int i = 0; i < v; i++) {
+				for(String str : line.split(_COLON)) {
+					Parser.evaluate(str);
 				}
-			} else {
-				Console.E("Malformed Syntax: loop statement is malformed...");
 			}
 		} else {
-			Console.E("Malformed Syntax: loop statement is malformed...");
+			boolean bool = Runtime.getBoolean(val);
+					
+			line = line.replace(val, "")
+					.trim();
+			
+			while(bool) {
+				for(String str : line.split(_COLON)) {
+					Parser.evaluate(str);
+				}
+				
+				bool = Runtime.getBoolean(val);
+			}
 		}
 	}
 	
@@ -1002,7 +1163,7 @@ public class SyntaxManager {
 	
 	public static void parseReturn(String string, Parser parser) {
 		string = string.replaceFirst("return", "").trim();
-		Object value = Runtime.getValue(string);
+		Object value = Runtime.getValue(string, parser);
 		
 		parser.getCurrentFunction().setReturnValue(value);
 	}

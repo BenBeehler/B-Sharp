@@ -15,6 +15,7 @@ public class BVariable implements BObject {
 	private File file;
 	private BFunction function;
 	private BType type;
+	private boolean mutable;
 	
 	private ArrayList<BVariable> subVariables = new ArrayList<BVariable>();
 	
@@ -118,5 +119,13 @@ public class BVariable implements BObject {
 		ArrayList<BVariable> list = new ArrayList<>();
 		list.add(variable);
 		setSubVariables(list);
+	}
+
+	public boolean isMutable() {
+		return mutable;
+	}
+
+	public void setMutable(boolean mutable) {
+		this.mutable = mutable;
 	}
 }

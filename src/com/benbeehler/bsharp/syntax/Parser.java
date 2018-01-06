@@ -37,7 +37,7 @@ public class Parser {
 		this.body = lines;
 	}
 	
-	public void start () {
+	public void start() {
 		Tokenizer tokenizer = new Tokenizer(file);
 		
 		for(String line : tokenizer.getOutput()) {
@@ -67,6 +67,8 @@ public class Parser {
 						SyntaxManager.parseImport(line);
 					} else if(Runtime.containsTypeByName(fbracket)) {
 						SyntaxManager.parseTypeVar(line, this);
+					} else if(Runtime.containsVariableByName(first)) {
+						SyntaxManager.remapMutable(line, this);
 					} else {
 					}
 				} else {
@@ -140,5 +142,46 @@ public class Parser {
 
 	public void setCurrentType(BType currentType) {
 		this.currentType = currentType;
+	}
+	
+	public static void evaluate(String line) {
+		line = line.trim();
+		String[] split = line.split(" ");
+		String first = split[0].trim();
+		String f = SyntaxManager.getStringUntilString(line, SyntaxManager
+				._OPENPB);
+		String fbracket = SyntaxManager.getStringUntilString(line, "=>")
+				.trim();
+		
+		if (first.equals("var")) {
+			SyntaxManager.parseVariable(line, new Parser(Runtime.file));
+		} else if (first.equals("type")) {
+			SyntaxManager.parseType(line, new Parser(Runtime.file));
+		} else if (first.equals("func")) {
+			SyntaxManager.parseFunction(line, new Parser(Runtime.file));
+		} else if(first.equals("nimport")) {
+			SyntaxManager.importNativeFunction(line, new Parser(Runtime.file));
+		} else if(first.equals("cimport")) {
+			SyntaxManager.importCategory(line, new Parser(Runtime.file));
+		} else if(first.equals("category")) {
+			SyntaxManager.parseCategory(line, new Parser(Runtime.file));
+		} else if (first.equals("import")) {
+			SyntaxManager.parseImport(line);
+		} else if(Runtime.containsTypeByName(fbracket)) {
+			SyntaxManager.parseTypeVar(line, new Parser(Runtime.file));
+		} else if(Runtime.containsVariableByName(first)) {
+			SyntaxManager.remapMutable(line, new Parser(Runtime.file));
+		} else if (f.equals("if")) {
+			SyntaxManager.parseIfStatement(line, new Parser(Runtime.file));
+		} else if (f.equals("loop")) {
+			SyntaxManager.parseLoopStatement(line, new Parser(Runtime.file));
+		} else if(Runtime.containsFunctionByName(f)) {
+			SyntaxManager.callFunction(line, new Parser(Runtime.file)); //Function called
+		} else if(f.equals("func")) {
+			SyntaxManager.checkFunction(line, new Parser(Runtime.file));
+		} else if(line.startsWith("thread::")) {
+			SyntaxManager.parseThread(line, new Parser(Runtime.file));
+		} else {
+		}
 	}
 }

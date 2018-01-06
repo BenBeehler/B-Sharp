@@ -8,8 +8,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 
-import com.benbeehler.bsharp.runtime.io.STDIO;
-
 public class Utils {
 
 	public static String[] getContent(File file) throws IOException {
@@ -25,9 +23,9 @@ public class Utils {
 		return content.toArray(new String[content.size()]);
 	}
 	
-	public static String getSpecializedInput() {
+	/*public static String getSpecializedInput() {
 		return STDIO.STDIN.nextLine();
-	}
+	}*/
 	
 	public static String getInput(InputStream stream) throws IOException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(stream));

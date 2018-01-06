@@ -135,6 +135,117 @@ public class Runtime {
 			});
 			
 			addFunction(thread);
+		} else if(function.equals("list")) {
+			BFunction index = new BFunction("index", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			index.setNative(true);
+			BVariable index_1 = new BVariable("index_1", null, null, AccessModifier.RESTRICTED);
+			BVariable index_2 = new BVariable("index_2", null, null, AccessModifier.RESTRICTED);
+			index.addParameter(index_1);
+			index.addParameter(index_2);
+			index.setNativeRunnable(() -> {
+				if(index.getParameters().size() == 2) {
+					Object value = index.getParameters().get(0).getValue();
+					int ind = Integer.parseInt(index.getParameters().get(1).getValue().toString());
+					
+					if(value instanceof ArrayList) {
+						@SuppressWarnings("unchecked")
+						ArrayList<Object> list = (ArrayList<Object>) value;
+						index.setReturnValue(list.get(ind));
+					} else {
+						Console.E("given value is not recognized as a list (" + value + ")");
+					}
+				} else {
+					Console.E("invalid parameter count");
+				}
+			});
+			
+			Runtime.functions.add(index);
+			
+			BFunction ladd = new BFunction("ladd", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			ladd.setNative(true);
+			BVariable ladd_1 = new BVariable("ladd_1", null, null, AccessModifier.RESTRICTED);
+			BVariable ladd_2 = new BVariable("ladd_2", null, null, AccessModifier.RESTRICTED);
+			ladd.addParameter(ladd_1);
+			ladd.addParameter(ladd_2);
+			ladd.setNativeRunnable(() -> {
+				if(ladd.getParameters().size() == 2) {
+					Object value = ladd.getParameters().get(0).getValue();
+					Object newVal = ladd.getParameters().get(1).getValue();
+					
+					if(value instanceof ArrayList) {
+						@SuppressWarnings("unchecked")
+						ArrayList<Object> list = (ArrayList<Object>) value;
+						list.add(newVal);
+						ladd.setReturnValue(list);
+						System.out.println(ladd.getValue() instanceof ArrayList);
+					} else {
+						Console.E("given value is not recognized as a list");
+					}
+				} else {
+					Console.E("invalid parameter count");
+				}
+			});
+			
+			Runtime.functions.add(ladd);
+		} else if(function.equals("boolean")) {
+			BFunction equals = new BFunction("equals", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			equals.setNative(true);
+			BVariable equals_1 = new BVariable("equals_1", null, null, AccessModifier.RESTRICTED);
+			BVariable equals_2 = new BVariable("equals_2", null, null, AccessModifier.RESTRICTED);
+			equals.addParameter(equals_1);
+			equals.addParameter(equals_2);
+			equals.setNativeRunnable(() -> {
+				if(equals.getParameters().size() == 2) {
+					Object one = equals.getParameters().get(0).getValue();
+					Object two = equals.getParameters().get(1).getValue();
+					
+					//System.out.println(one + " : " + two);
+					
+					equals.setReturnValue(one.equals(two));
+				} else {
+					Console.E("invalid parameter count");
+				}
+			});
+			
+			Runtime.functions.add(equals);
+			
+			BFunction greater = new BFunction("greater", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			greater.setNative(true);
+			BVariable greater_1 = new BVariable("greater_1", null, null, AccessModifier.RESTRICTED);
+			BVariable greater_2 = new BVariable("greater_2", null, null, AccessModifier.RESTRICTED);
+			greater.addParameter(greater_1);
+			greater.addParameter(greater_2);
+			greater.setNativeRunnable(() -> {
+				if(greater.getParameters().size() == 2) {
+					double one = Double.parseDouble(greater.getParameters().get(0).getValue().toString());
+					double two = Double.parseDouble(greater.getParameters().get(1).getValue().toString());
+					
+					greater.setReturnValue(one > two);
+				} else {
+					Console.E("invalid parameter count");
+				}
+			});
+			
+			Runtime.functions.add(greater);
+		} else if(function.equals("system")) {
+			BFunction end = new BFunction("destroy", null, file,
+					AccessModifier.UNIVERSAL);
+			
+			end.setNative(true);
+			
+			end.setNativeRunnable(() -> {
+				System.exit(0);
+			});
+			
+			addFunction(end);
 		} else if(function.equals("type")) {
 			BFunction tostring = new BFunction("toString", null, file,
 					AccessModifier.UNIVERSAL);
@@ -190,9 +301,17 @@ public class Runtime {
 			BFunction rand = new BFunction("rand", null, file,
 					AccessModifier.UNIVERSAL);
 			
+			BVariable rand_1 = new BVariable("rand_1", null, null, AccessModifier.RESTRICTED);
+			rand.addParameter(rand_1);
+			
 			rand.setNative(true);
 			rand.setNativeRunnable(() -> {
-				rand.setReturnValue(new Random().nextInt(Integer.MAX_VALUE));
+				if(rand.getParameters().size() == 1) {
+					int limit = Integer.parseInt(rand.getParameters().get(0).getValue().toString());
+					rand.setReturnValue(new Random().nextInt(limit));
+				} else {
+					Console.E("invalid parameter count");
+				}
 			});
 			
 			addFunction(rand);
@@ -236,7 +355,7 @@ public class Runtime {
 						stream.printf(data);
 						stream.flush();
 					} else {
-						Console.E("given value is not recognized as an output stream");
+						Console.E("given value is not recognized as an output stream ("+value+")");
 					}
 				} else {
 					Console.E("invalid parameter count");
@@ -309,6 +428,15 @@ public class Runtime {
 			});
 			
 			Runtime.addFunction(accept_socket);
+			
+			/*BFunction httpserver = new BFunction("httpServer", null, file, AccessModifier.UNIVERSAL);
+			httpserver.setNative(true);
+			httpserver.setNativeRunnable(() -> {
+		        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+		        server.createContext("/test", new MyHandler());
+		        server.setExecutor(null); // creates a default executor
+		        server.start();
+			});*/
 			
 			BFunction readFile = new BFunction("istream", null, file,
 					AccessModifier.UNIVERSAL);
@@ -402,7 +530,7 @@ public class Runtime {
 			
 			addFunction(socket);
 			
-			BFunction server = new BFunction("socketserver", null, file,
+			BFunction server = new BFunction("serversocket", null, file,
 					AccessModifier.UNIVERSAL);
 			
 			server.setNative(true);
@@ -452,6 +580,8 @@ public class Runtime {
 			});
 			
 			addFunction(readLine);
+		} else {
+			Console.E("unrecognized native import: " + function);
 		}
 	}
 		
@@ -524,10 +654,10 @@ public class Runtime {
 	}
 	
 	//good for replacing variables in strings
-	public static String replaceVariableNamesWithValues (String string) {
+	public static String replaceVariableNamesWithValues(String string) {
 		for (BVariable var : Runtime.variables) {
 			if (string.contains(var.getName())) {
-				string = string.replace(var.getName(), var.getValue().toString());
+				string = string.replaceAll(var.getName(), var.getValue().toString());
 			}
 		}
 		
@@ -561,11 +691,7 @@ public class Runtime {
 	// this section is designed for strict value parsing and conversion
 	public static boolean isInteger(String string) {
 		try {
-			if(!string.contains(".")) {
-				Integer.parseInt(SyntaxManager.solveArithmeticFromString(string).toString());
-			} else {
-				return false;
-			}
+			Integer.parseInt(SyntaxManager.solveArithmeticFromString(string).toString());
 		} catch (Exception e) {
 			return false;
 		}
@@ -596,7 +722,7 @@ public class Runtime {
 	public static boolean isArray(String string) {
 		if(string.startsWith("{")) {
 			if(string.endsWith("}")) {
-				if(string.contains(";")) {
+				if(string.contains(SyntaxManager._LISTSPLIT)) {
 					return true;
 				} else {
 					return false;
@@ -700,12 +826,12 @@ public class Runtime {
 			for(String str : split) {
 				//str = str.trim();
 				if(Runtime.isFunction(str.trim())) {
-					sb.append(getValue(str.trim()));
-				} else if(Runtime.containsVariableByName(str.trim())) {
-					sb.append(getValue(str));
+					sb.append(getValue(str.trim(), new Parser(file)));
 				} else if(str.trim().startsWith("\"")
 						&& str.trim().endsWith("\"")) {
 					sb.append(str.replaceAll("\"", ""));
+				} else {
+					sb.append(getValue(str, new Parser(file)));
 				}
 			}
 		}
@@ -714,7 +840,7 @@ public class Runtime {
 	}
 	
 	public static int getInteger(String line) {
-		line = Runtime.replaceVariableNamesWithValues(line);
+		line = Runtime.replaceVariableNamesWithValues(SyntaxManager.raw(line));
 		
 		if(Runtime.isInteger(line)) {
 			Object x;
@@ -742,50 +868,79 @@ public class Runtime {
 		if(line.equals("true") 
 				|| line.equals("false")) 
 			return true;
+		else
+			if(line.startsWith("!")) return true;
 		else 
 			if(line.contains(SyntaxManager._EQUAL)) 
 				return true;
 			else
-				return getValue(line).equals("true")
-						|| getValue(line).equals("false");
+				return false;
 	}
 	
 	public static boolean getBoolean(Object l) {
-		String line = l.toString();
-		line = line.trim();
-		
-		String[] split = line.split(SyntaxManager._EQUAL);
+		String line = l.toString().trim();
 		
 		if(line.trim().equals("true")) {
 			return true;
 		} else if(line.equals("false")) {
 			return false;
-		} else if(split.length > 2) {
-			String[] spl = SyntaxManager.splitByMiddle(line, SyntaxManager._EQUAL);
-			
-			return (getBoolean(spl[0]) == getBoolean(spl[1]));
 		} else {
-			if(line.startsWith("!")) return !getBoolean(line
-					.replaceFirst("!", ""));
-			if(line.startsWith(SyntaxManager._OPENPB)) {
-				if(line.endsWith(SyntaxManager._CLOSEPB)) {
-					line = line.replaceFirst(SyntaxManager._OPENPB, "");
-					line = SyntaxManager.reverse(line);
-					line = line.replaceFirst(SyntaxManager.reverse(SyntaxManager._CLOSEPB), "");
-					line = SyntaxManager.reverse(line);
-				}
+			if(line.startsWith("!")) {
+				if(line.equals("true")) return false;
+				if(line.equals("false")) return true;
+				line = line
+						.replaceFirst("!", "");
+				return !getBoolean(line
+						.replaceFirst("!", ""));
+			} else if(Runtime.isFunction(line)) {
+				String f = SyntaxManager.getStringUntilString(line, SyntaxManager._OPENPB).trim();
+				
+				Parser parser = new Parser(Runtime.file);
+				SyntaxManager.callFunction(line, parser);
+				BFunction function = Runtime.getFunctionFromName(f);
+				Object returned = function.getReturnValue();
+				Object val = getValue(returned, parser);
+				return getBoolean(val);
+			} else if(Runtime.containsVariableByName(line.trim())) {
+				return getBoolean(Runtime.getVariableFromName(line).getValue());
 			}
-			
-			if(line.startsWith(SyntaxManager._OPENPB) 
-					&& line.endsWith(SyntaxManager._CLOSEPB)) return getBoolean(line);
-			
-			String[] spl = line.split(SyntaxManager._EQUAL);
-			return getValue(spl[0]).equals(getValue(spl[1]));
 		}
+		return false;
+	}
+	
+	public static boolean getBoolean(Object l, Parser parser) {
+		String line = l.toString().trim();
+		
+		if(line.trim().equals("true")) {
+			return true;
+		} else if(line.equals("false")) {
+			return false;
+		} else {
+			if(line.startsWith("!")) {
+				if(line.equals("true")) return true;
+				if(line.equals("false")) return false;
+				line = line
+						.replaceFirst("!", "");
+				return !getBoolean(line
+						.replaceFirst("!", ""));
+			} else if(Runtime.isFunction(line)) {
+				String f = SyntaxManager.getStringUntilString(line, SyntaxManager._OPENPB).trim();
+				
+				SyntaxManager.callFunction(line, parser);
+				BFunction function = Runtime.getFunctionFromName(f);
+				Object returned = function.getReturnValue();
+				Object val = getValue(returned, parser);
+				return getBoolean(val);
+			} else if(Runtime.containsVariableByName(line.trim())) {
+				return getBoolean(Runtime.getVariableFromName(line).getValue());
+			}
+		}
+		
+		return false;
 	}
 	
 	public static Double getDouble(String line) {
-		line = Runtime.replaceVariableNamesWithValues(line);
+		line = Runtime.replaceVariableNamesWithValues(SyntaxManager.raw(line));
 		
 		if(Runtime.isDouble(line)) {
 			Object x;
@@ -824,7 +979,8 @@ public class Runtime {
 		String[] split = value.split(",");
 		ArrayList<Object> list = new ArrayList<>();
 		for(String entry : split) {
-			Object val = Runtime.getValue(entry.trim());
+			Object val = Runtime.getValue(entry.trim(),
+					new Parser(file));
 			
 			list.add(val);
 		}
@@ -850,7 +1006,7 @@ public class Runtime {
 		}
 	}
 	
-	public static Object getValue(Object value) {
+	public static Object getValue(Object value, Parser parser) {
 		String str = value.toString()
 				.trim();
 		
@@ -858,28 +1014,23 @@ public class Runtime {
 		
 		if(Runtime.isArrayList(value)) {
 			return Runtime.getList(value);
-		} else if (Runtime.isDouble(str)) {
+		} else if (Runtime.isInteger(SyntaxManager.raw(str))) {
+			return getInteger(SyntaxManager.raw(str));
+		} else if (Runtime.isDouble(SyntaxManager.raw(str))) {
 			try {
-				return getDouble(value.toString());
+				return getDouble(SyntaxManager.raw(str));
 			} catch (NumberFormatException e) {
-				return value;
-			}
-		} else if (Runtime.isInteger(str)) {
-			try {
-				return Integer.parseInt(SyntaxManager
-						.solveArithmeticFromString(str)
-						.toString());
-			} catch (NumberFormatException | ScriptException e) {
 				return value;
 			}
 		} else if (Runtime.isArray(str)) {
 			ArrayList<String> list = new ArrayList<>();
 			
-			str = str.replace("{", "")
-					.replace("}", "")
-					.trim();
+			String[] array = str.split("");
+			array[0] = "";
+			array[array.length-1] = "";
+			str = SyntaxManager.convert(array);
 			
-			String[] split = str.split(";");
+			String[] split = str.split(SyntaxManager._LISTSPLIT);
 			
 			for(String entry : split) {
 				list.add(entry);
@@ -889,7 +1040,62 @@ public class Runtime {
 		} else if(Runtime.isString(str)) {
 			return Runtime.getStringValue(str);
 		} else if(Runtime.containsFunctionByName(f)) {
-			SyntaxManager.callFunction(str, new Parser(Runtime.file));
+			SyntaxManager.callFunction(str, parser);
+					
+			BFunction function = Runtime.getFunctionFromName(f);
+					
+			Object returned = function.getReturnValue();
+					
+			Object val = getValue(returned, parser);
+					
+			return val;
+		} else if(Runtime.containsVariableByName(str)) {
+			return Runtime.getVariableFromName(str).getValue();
+		} else if(parser.getCurrentFunction().containsParameterByName(str)) {
+			return parser.getCurrentFunction().getParameterFromName(str).getValue();
+		} else if(isBoolean(str)) {
+			return getBoolean(str, parser);
+		} else {
+			Console.E("unrecognized expression: " + SyntaxManager.raw(str));
+			return value;
+		}
+	}
+	
+	public static Object getValue(Object value) {
+		String str = value.toString()
+				.trim();
+		
+		String f = SyntaxManager.getStringUntilString(str, SyntaxManager._OPENPB).trim();
+		
+		if(Runtime.isArrayList(value)) {
+			return Runtime.getList(value);
+		} else if (Runtime.isInteger(str)) {
+			return getInteger(str);
+		} else if (Runtime.isDouble(str)) {
+			try {
+				return getDouble(value.toString());
+			} catch (NumberFormatException e) {
+				return value;
+			}
+		} else if (Runtime.isArray(str)) {
+			ArrayList<String> list = new ArrayList<>();
+			
+			String[] array = str.split("");
+			array[0] = "";
+			array[array.length-1] = "";
+			str = SyntaxManager.convert(array);
+			
+			String[] split = str.split(SyntaxManager._LISTSPLIT);
+			
+			for(String entry : split) {
+				list.add(entry);
+			}
+			
+			return list;
+		} else if(Runtime.isString(str)) {
+			return Runtime.getStringValue(str);
+		} else if(Runtime.containsFunctionByName(f)) {
+			SyntaxManager.callFunction(str);
 					
 			BFunction function = Runtime.getFunctionFromName(f);
 					
@@ -898,10 +1104,12 @@ public class Runtime {
 			Object val = getValue(returned);
 					
 			return val;
-			} else if(Runtime.containsVariableByName(str)) {
-				return Runtime.getVariableFromName(str).getValue();
+		} else if(Runtime.containsVariableByName(str)) {
+			return Runtime.getVariableFromName(str).getValue();
+		} else if(isBoolean(str)) {
+			return getBoolean(str);
 		} else {
-			return Runtime.getBoolean(value);
+			return value;
 		}
 	}
 	
@@ -935,9 +1143,9 @@ public class Runtime {
 	
 	public static boolean compareToValues(String value1, String value2) {
 		Object one = Runtime.getValue(value1
-				.trim());
+				.trim(), new Parser(file));
 		Object two = Runtime.getValue(value2
-				.trim());
+				.trim(), new Parser(file));
 		
 		if(one == two) {
 			return true;
