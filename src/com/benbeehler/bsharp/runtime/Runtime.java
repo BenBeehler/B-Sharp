@@ -689,7 +689,7 @@ public class Runtime {
 	}
 	
 	// this section is designed for strict value parsing and conversion
-		public static boolean isInteger(Object object) {
+	public static boolean isInteger(Object object) {
 		if(object instanceof Integer) {
 			return true;
 		} else {
