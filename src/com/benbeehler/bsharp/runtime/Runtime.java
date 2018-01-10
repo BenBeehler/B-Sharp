@@ -689,23 +689,72 @@ public class Runtime {
 	}
 	
 	// this section is designed for strict value parsing and conversion
-	public static boolean isInteger(String string) {
-		try {
-			Integer.parseInt(SyntaxManager.solveArithmeticFromString(string).toString());
-		} catch (Exception e) {
-			return false;
+		public static boolean isInteger(Object object) {
+		if(object instanceof Integer) {
+			return true;
+		} else {
+			Character[] valid = new Character[]{ 
+					'0',
+					'1',
+					'2',
+					'3',
+					'4',
+					'5',
+					'6',
+					'7',
+					'8',
+					'9'};
+			
+			List<Character> list = Arrays.asList(valid);
+			
+			String string = "";
+			try {
+				string = SyntaxManager.solveArithmeticFromString(object.toString()).toString();
+			} catch (ScriptException e) {
+				Console.log("Failed to process arithmetic: script failed");
+			}
+			char[] characters = string.toCharArray();
+			
+			for(char c : characters) {
+				if(!list.contains(c)) return false;
+			}
 		}
-		
+ 
 		return true;
 	}
 	
-	public static boolean isDouble(String string) {
-		try {
-			Double.parseDouble(SyntaxManager.solveArithmeticFromString(string).toString());
-		} catch (Exception e) {
-			return false;
+	public static boolean isDouble(Object object) {
+		if(object instanceof Integer) {
+			return true;
+		} else {
+			Character[] valid = new Character[]{ 
+					'0',
+					'1',
+					'2',
+					'3',
+					'4',
+					'5',
+					'6',
+					'7',
+					'8',
+					'9',
+					'.'};
+			
+			List<Character> list = Arrays.asList(valid);
+			
+			String string = "";
+			try {
+				string = SyntaxManager.solveArithmeticFromString(object.toString()).toString();
+			} catch (ScriptException e) {
+				Console.log("Failed to process arithmetic: script failed");
+			}
+			char[] characters = string.toCharArray();
+			
+			for(char c : characters) {
+				if(!list.contains(c)) return false;
+			}
 		}
-		
+ 
 		return true;
 	}
 	
